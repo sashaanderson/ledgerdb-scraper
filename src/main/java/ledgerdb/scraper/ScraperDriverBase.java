@@ -2,13 +2,16 @@ package ledgerdb.scraper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class ScraperDriverBase implements Runnable {
 
+    private static final Logger logger = LogManager.getLogger();
+    
     protected SiteInfo siteInfo;
     private InstanceInfo instanceInfo;
     
@@ -63,16 +66,20 @@ public abstract class ScraperDriverBase implements Runnable {
                         }
                     });
         }
+        
+        @Override
+        public String toString() {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
     }
     
     protected void merge(StatementInfo statementInfo) {
-        ObjectMapper mapper = new ObjectMapper();
-        String data;
-        try {
-            data = mapper.writeValueAsString(statementInfo);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
-        }
+        String data = statementInfo.toString();
         
         System.out.println(data);
     }

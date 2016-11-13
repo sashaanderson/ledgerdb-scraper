@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import ledgerdb.scraper.ScraperDriverBase;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
@@ -15,15 +17,21 @@ import org.openqa.selenium.support.ui.Select;
 
 public class ScraperDriver extends ScraperDriverBase {
 
+    private static final Logger logger = LogManager.getLogger();
+    
     @Override
     public void run() {
         FirefoxDriver driver = new FirefoxDriver();
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        driver.get("https://www.txn.banking.pcfinancial.ca/");        
+        
+        String url = "https://www.txn.banking.pcfinancial.ca/";
+        logger.debug("Connecting to " + url);
+        driver.get(url);        
         
         // Online Banking Sign In
         
         driver.findElement(By.xpath("//h1[text()='Online Banking Sign In']"));
+        logger.debug("Online Banking Sign In");
         
         WebElement e1, e2;
         e1 = driver.findElement(By.xpath("//label[contains(.,'Card Number:')]"));
@@ -37,6 +45,7 @@ public class ScraperDriver extends ScraperDriverBase {
         e2.sendKeys(siteInfo.password);
         Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
         e2.sendKeys(Keys.ENTER);
+        logger.debug("Logging in...");
         // LOADING...
         
         // Account Summary
@@ -47,15 +56,18 @@ public class ScraperDriver extends ScraperDriverBase {
         driver.findElement(By.xpath("//section[@class='user-info']"));
         assert driver.getTitle().startsWith("Account Summary - ");
         assert driver.getTitle().endsWith("- Online Banking");
+        logger.debug("Account Summary");
         
         // Deposit Accounts
         e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
         List<WebElement> accountList = e1.findElements(By.xpath("tbody/tr"));
         assert accountList.size() > 0;
+        logger.debug("Got " + accountList.size() + " deposit accounts");
         
-        for (int n = 0; n < accountList.size(); n++) {
+        for (int i = 0; i < accountList.size(); i++) {
+            logger.debug("Processing account " + i + " out of " + accountList.size());
             
-            if (n > 0) {
+            if (i > 0) {
                 e1 = driver.findElement(By.xpath("//a[text()='Account Summary']"));
                 //Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS); //XXX
                 e1.click();
@@ -63,9 +75,9 @@ public class ScraperDriver extends ScraperDriverBase {
                 e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
                 accountList = e1.findElements(By.xpath("tbody/tr"));
             }
-            if (n >= accountList.size()) break;
+            if (i >= accountList.size()) break;
         
-            e2 = accountList.get(n).findElement(By.xpath(".//a"));
+            e2 = accountList.get(i).findElement(By.xpath(".//a"));
             Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
             e2.click();
             // LOADING
@@ -73,17 +85,22 @@ public class ScraperDriver extends ScraperDriverBase {
             // Account Details
             
             driver.findElement(By.xpath("//header/h1[text()='Account Details']"));
+            logger.debug("Account Details");
+            
             e1 = driver.findElement(By.xpath("//div[@class='account-selector']//select"));
             Select sel = new Select(e1);
             String accountName = sel.getFirstSelectedOption().getText();
+            logger.info("Account name: " + accountName);
+            
             String reference = accountName.replaceFirst(".*\\(([0-9]+)\\).*", "$1");
-            //System.out.println(accountName);
             assert reference.matches("^[0-9]+$");
+            logger.info("Reference: " + reference);
 
             List<WebElement> uiAlertList = driver.findElements(By.xpath("//ui-alert/div[@class='ui-text']"));
             if (uiAlertList.size() > 0) {
                 // "There are no transactions found that meet your request."
-                System.out.println(uiAlertList.get(0).getText());
+                logger.info("Alert: " + uiAlertList.get(0).getText());
+                logger.info("Skipping account " + reference + " because of the alert");
                 continue;
             }
             // Past Transactions
@@ -91,11 +108,15 @@ public class ScraperDriver extends ScraperDriverBase {
             List<WebElement> trList = e1.findElements(By.xpath(".//tr"));
             assert trList.size() > 0;
             assert "Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText());
+            logger.debug("Got " + trList.size() + " transactions");
 
             List<StatementInfo> siList = new ArrayList<>(trList.size());
 
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMM d, yyyy");
+            final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMM d, yyyy");
             trList.stream().skip(1).forEach(tr -> {
+                int j = siList.size() + 1;
+                logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
+                
                 List<WebElement> tdList = tr.findElements(By.xpath("./td"));
                 assert tdList.size() == 5;
                 assert tdList.get(0).getAttribute("class").equals("date");
@@ -142,15 +163,19 @@ public class ScraperDriver extends ScraperDriverBase {
 
                 merge(si);
                 siList.add(si);
+                
+                logger.debug("Done merged transaction " + j);
             }); // forEach
         } // for
 
+        logger.debug("Logging out...");
         e1 = driver.findElement(By.xpath("//button[text()='sign out']/.."));
         e1.click();
 
         driver.findElement(By.xpath("//h1[text()='You have signed off']"));
         
         driver.quit();
+        logger.debug("Done");
     }
 
 }

@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.io.IOUtils;
 
 public class KPScript {
@@ -14,6 +16,8 @@ public class KPScript {
     public static final String DEFAULT_KDBX_FILE = "ledgerdb-scraper.kdbx";
     
     private static final String EOL = System.lineSeparator();
+    
+    private static final Logger logger = LogManager.getLogger();
     
     private KPScript() {}
     
@@ -37,7 +41,7 @@ public class KPScript {
         args.add("-ref-Title:" + title);
         args.add("-FailIfNoEntry");
         args.add("-Field:" + field);
-        System.out.println(args
+        logger.debug(args
                 .stream()
                 .map(arg -> arg.startsWith("-pw:")
                         ? "-pw:******"
@@ -50,19 +54,19 @@ public class KPScript {
         try {
             p.waitFor();
         } catch (InterruptedException e) {
-            throw new IOException(e);
+            throw new RuntimeException("Interrupted", e);
         }
         String output = IOUtils.readFully(p.getInputStream());
         if (p.exitValue() != 0) {
-            System.err.println(output);
-            throw new IOException("KPScript failed, exit value " + p.exitValue());
+            logger.error(output);
+            throw new RuntimeException("KPScript failed, exit value " + p.exitValue());
         }
         
         String[] lines = output.split(EOL);
         if (lines.length < 2
                 || !"OK: Operation completed successfully.".equals(lines[lines.length - 1])) {
-            System.err.println(output);
-            throw new IOException("KPScript failed");
+            logger.error(output);
+            throw new RuntimeException("KPScript failed");
         }
         return Arrays.stream(lines, 0, lines.length - 1).collect(Collectors.joining(EOL));
     }

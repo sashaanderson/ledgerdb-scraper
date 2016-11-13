@@ -1,7 +1,12 @@
 package ledgerdb.scraper;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class Scraper {
 
+    private static final Logger logger = LogManager.getLogger();
+    
     private static void usage() {
         System.err.println("Usage: java [-D<name>=<value>] ledgerdb.scraper.Scraper SITE [INSTANCE]");
         System.err.println();
@@ -14,13 +19,29 @@ public class Scraper {
     public static void main(String[] args) throws Exception{
         if (args.length < 1)
             usage();
+        
+        logger.info("Scraper started");
 
         String siteName = args[0];
+        logger.debug("Site name: " + siteName);
         
         String instanceName = "ledgerdb";
         if (args.length > 1) {
             instanceName += "-" + args[1];
         }
+        logger.debug("Instance name: " + instanceName);
+        
+        try {
+            scrape(siteName, instanceName);
+        } catch (Exception e) {
+            logger.fatal("Exception occurred: " + e.getMessage(), e);
+            throw e;
+        }
+        logger.info("Scraper completed successfully" + System.lineSeparator());
+    }
+    
+    private static void scrape(String siteName, String instanceName)
+            throws Exception {
         
         SiteInfo siteInfo = new SiteInfoBuilder()
                 .set("logon", KPScript.getEntry(siteName, "UserName"))
