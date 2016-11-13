@@ -1,0 +1,5 @@
+config.yml
+ledgerdb-scraper.kdbx
+ledgerdb-scraper.pw
+nbactions.xml
+target/
