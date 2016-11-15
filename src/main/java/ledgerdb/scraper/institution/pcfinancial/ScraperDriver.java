@@ -65,7 +65,7 @@ public class ScraperDriver extends ScraperDriverBase {
         logger.debug("Got " + accountList.size() + " deposit accounts");
         
         for (int i = 0; i < accountList.size(); i++) {
-            logger.debug("Processing account " + i + " out of " + accountList.size());
+            logger.debug("Processing account " + (i + 1) + " out of " + accountList.size());
             
             if (i > 0) {
                 e1 = driver.findElement(By.xpath("//a[text()='Account Summary']"));

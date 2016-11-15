@@ -5,8 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 
 public abstract class ScraperDriverBase implements Runnable {
 
@@ -81,7 +88,21 @@ public abstract class ScraperDriverBase implements Runnable {
     protected void merge(StatementInfo statementInfo) {
         String data = statementInfo.toString();
         
-        System.out.println(data);
+        //System.out.println(data);
+        
+        Client client = ClientBuilder.newClient();
+        
+        HttpAuthenticationFeature feature
+                = HttpAuthenticationFeature.basic(instanceInfo.username, instanceInfo.password);
+        client.register(feature);
+        
+        WebTarget target = client.target(instanceInfo.url).path("statement");
+        
+        Response response = target.request(MediaType.TEXT_PLAIN)
+                .post(Entity.entity(statementInfo, MediaType.APPLICATION_JSON_TYPE));
+        
+        logger.info(response.getStatus());
+        logger.info(response.readEntity(String.class));
     }
     
 }
