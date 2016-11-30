@@ -14,6 +14,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.Select;
+import static com.google.common.base.Preconditions.checkState;
 
 public class ScraperDriver extends ScraperDriverBase {
 
@@ -35,7 +36,7 @@ public class ScraperDriver extends ScraperDriverBase {
         
         WebElement e1, e2;
         e1 = driver.findElement(By.xpath("//label[contains(.,'Card Number:')]"));
-        assert "Card Number:".equals(e1.getText());
+        checkState("Card Number:".equals(e1.getText()));
         
         e2 = e1.findElement(By.xpath("following::input"));
         e2.sendKeys(siteInfo.logon);
@@ -54,14 +55,14 @@ public class ScraperDriver extends ScraperDriverBase {
 
         driver.findElement(By.xpath("//header/h1[text()='Account Summary']"));
         driver.findElement(By.xpath("//section[@class='user-info']"));
-        assert driver.getTitle().startsWith("Account Summary - ");
-        assert driver.getTitle().endsWith("- Online Banking");
+        checkState(driver.getTitle().startsWith("Account Summary - "));
+        checkState(driver.getTitle().endsWith("- Online Banking"));
         logger.debug("Account Summary");
         
         // Deposit Accounts
         e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
         List<WebElement> accountList = e1.findElements(By.xpath("tbody/tr"));
-        assert accountList.size() > 0;
+        checkState(accountList.size() > 0);
         logger.debug("Got " + accountList.size() + " deposit accounts");
         
         for (int i = 0; i < accountList.size(); i++) {
@@ -93,7 +94,7 @@ public class ScraperDriver extends ScraperDriverBase {
             logger.info("Account name: " + accountName);
             
             String reference = accountName.replaceFirst(".*\\(([0-9]+)\\).*", "$1");
-            assert reference.matches("^[0-9]+$");
+            checkState(reference.matches("^[0-9]+$"));
             logger.info("Reference: " + reference);
 
             List<WebElement> uiAlertList = driver.findElements(By.xpath("//ui-alert/div[@class='ui-text']"));
@@ -106,8 +107,8 @@ public class ScraperDriver extends ScraperDriverBase {
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
             List<WebElement> trList = e1.findElements(By.xpath(".//tr"));
-            assert trList.size() > 0;
-            assert "Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText());
+            checkState(trList.size() > 0);
+            checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
             logger.debug("Got " + trList.size() + " transactions");
 
             List<StatementInfo> siList = new ArrayList<>(trList.size());
@@ -118,12 +119,12 @@ public class ScraperDriver extends ScraperDriverBase {
                 logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
                 
                 List<WebElement> tdList = tr.findElements(By.xpath("./td"));
-                assert tdList.size() == 5;
-                assert tdList.get(0).getAttribute("class").equals("date");
-                assert tdList.get(1).getAttribute("class").equals("transactions");
-                assert tdList.get(2).getAttribute("class").equals("debit");
-                assert tdList.get(3).getAttribute("class").equals("credit");
-                assert tdList.get(4).getAttribute("class").equals("balance");
+                checkState(tdList.size() == 5);
+                checkState(tdList.get(0).getAttribute("class").equals("date"));
+                checkState(tdList.get(1).getAttribute("class").equals("transactions"));
+                checkState(tdList.get(2).getAttribute("class").equals("debit"));
+                checkState(tdList.get(3).getAttribute("class").equals("credit"));
+                checkState(tdList.get(4).getAttribute("class").equals("balance"));
 
                 StatementInfo si = new StatementInfo();
                 si.reference = reference;
@@ -135,7 +136,7 @@ public class ScraperDriver extends ScraperDriverBase {
 
                 String dr = tdList.get(2).getText();
                 String cr = tdList.get(3).getText();
-                assert dr.equals("") != cr.equals("");
+                checkState(dr.equals("") != cr.equals(""));
 
                 String amount;
                 int sign;
@@ -149,7 +150,7 @@ public class ScraperDriver extends ScraperDriverBase {
                     amount = cr;
                 }
 
-                assert amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$");
+                checkState(amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$"));
                 si.amount = new BigDecimal(amount.replaceAll("[^\\d.]", ""));
                 if (sign < 0)
                     si.amount = si.amount.negate();
