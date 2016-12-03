@@ -96,7 +96,7 @@ public class ScraperDriver extends ScraperDriverBase {
             String reference = accountName.replaceFirst(".*\\(([0-9]+)\\).*", "$1");
             checkState(reference.matches("^[0-9]+$"));
             logger.info("Reference: " + reference);
-
+            
             List<WebElement> uiAlertList = driver.findElements(By.xpath("//ui-alert/div[@class='ui-text']"));
             if (uiAlertList.size() > 0) {
                 // "There are no transactions found that meet your request."
@@ -104,6 +104,9 @@ public class ScraperDriver extends ScraperDriverBase {
                 logger.info("Skipping account " + reference + " because of the alert");
                 continue;
             }
+            
+            int accountId = getAccountId(reference);
+
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
             List<WebElement> trList = e1.findElements(By.xpath(".//tr"));
@@ -111,11 +114,11 @@ public class ScraperDriver extends ScraperDriverBase {
             checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
             logger.debug("Got " + trList.size() + " transactions");
 
-            List<StatementInfo> siList = new ArrayList<>(trList.size());
+            List<StatementDTO> ss = new ArrayList<>(trList.size());
 
             final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMM d, yyyy");
             trList.stream().skip(1).forEach(tr -> {
-                int j = siList.size() + 1;
+                int j = ss.size() + 1;
                 logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
                 
                 List<WebElement> tdList = tr.findElements(By.xpath("./td"));
@@ -126,13 +129,14 @@ public class ScraperDriver extends ScraperDriverBase {
                 checkState(tdList.get(3).getAttribute("class").equals("credit"));
                 checkState(tdList.get(4).getAttribute("class").equals("balance"));
 
-                StatementInfo si = new StatementInfo();
-                si.reference = reference;
+                StatementDTO s = new StatementDTO();
+                //s.reference = reference;
+                s.accountId = accountId;
 
                 LocalDate date = LocalDate.parse(tdList.get(0).getText(), dtf);
-                si.date = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                s.date = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-                si.description = tdList.get(1).getText();
+                s.description = tdList.get(1).getText();
 
                 String dr = tdList.get(2).getText();
                 String cr = tdList.get(3).getText();
@@ -151,19 +155,19 @@ public class ScraperDriver extends ScraperDriverBase {
                 }
 
                 checkState(amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$"));
-                si.amount = new BigDecimal(amount.replaceAll("[^\\d.]", ""));
+                s.amount = new BigDecimal(amount.replaceAll("[^\\d.]", ""));
                 if (sign < 0)
-                    si.amount = si.amount.negate();
+                    s.amount = s.amount.negate();
 
-                si.source = "";
+                s.source = "";
 
-                si.sequence = (int)siList.stream()
-                        .filter(si2 -> si2.equals(si))
+                s.sequence = (int)ss.stream()
+                        .filter(si2 -> si2.equals(s))
                         .count()
                         + 1;
 
-                merge(si);
-                siList.add(si);
+                merge(s);
+                ss.add(s);
                 
                 logger.debug("Done merged transaction " + j);
             }); // forEach

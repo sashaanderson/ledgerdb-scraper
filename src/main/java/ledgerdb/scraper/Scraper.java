@@ -57,6 +57,7 @@ public class Scraper {
         
         ScraperDriverBase driver = ScraperDriverFactory.create(siteInfo, instanceInfo);
         driver.run();
+        //TODO: try-finally { driver.close() } or try-with-resources
     }
     
 }

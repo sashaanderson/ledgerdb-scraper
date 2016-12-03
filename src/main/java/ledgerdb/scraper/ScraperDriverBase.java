@@ -1,7 +1,7 @@
 package ledgerdb.scraper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +21,7 @@ public abstract class ScraperDriverBase implements Runnable {
     
     protected SiteInfo siteInfo;
     private InstanceInfo instanceInfo;
+    private Client client;
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -28,6 +29,49 @@ public abstract class ScraperDriverBase implements Runnable {
     
     void setInstanceInfo(InstanceInfo instanceInfo) {
         this.instanceInfo = instanceInfo;
+    }
+    
+    void init() {
+        client = ClientBuilder.newClient();
+        HttpAuthenticationFeature feature
+                = HttpAuthenticationFeature.basic(
+                        instanceInfo.username,
+                        instanceInfo.password);
+        client.register(feature);
+    }
+    
+    protected int getAccountId(String reference) {
+        WebTarget target = client.target(instanceInfo.url)
+                .path("institution_link")
+                .path(siteInfo.institution)
+                .path(reference);
+        Response r = target.request(MediaType.APPLICATION_JSON_TYPE)
+                .get();
+        checkStatus(r);
+        
+        InstitutionLinkDTO i = r.readEntity(InstitutionLinkDTO.class);
+        return i.accountId;
+    }
+    
+    protected void merge(StatementDTO s) {
+        WebTarget target = client.target(instanceInfo.url).path("statement");
+        
+        Response r = target.request(MediaType.TEXT_PLAIN)
+                .post(Entity.entity(s, MediaType.APPLICATION_JSON_TYPE));
+        checkStatus(r);
+        
+        String body = r.readEntity(String.class);
+        logger.info("Server response: " + body);
+    }
+    
+    private void checkStatus(Response r) {
+        String message = r.getStatus() + " " + r.getStatusInfo().getReasonPhrase();
+        if (r.getStatus() != 200) { // 200 OK
+            logger.error(message);
+            throw new IllegalStateException("Server request failed");
+        } else {
+            logger.info(message);
+        }
     }
     
     protected static class Sleeper {
@@ -45,64 +89,45 @@ public abstract class ScraperDriverBase implements Runnable {
         }
     }
     
-    protected class StatementInfo {
-        public StatementInfo() {}
+    protected class StatementDTO {
+        public StatementDTO() {}
         
-        public final String institution = siteInfo.institution;
-        public String reference;
-        
+        @JsonProperty("statement_date")
         public String date;
+        
+        @JsonProperty("account_id")
+        public int accountId;
+        
         public BigDecimal amount;
         public String description;
         public String source;
         
         public int sequence;
         
-        public boolean equals(StatementInfo si) {
+        public boolean equals(StatementDTO si) {
             return Arrays.stream(getClass().getFields())
+                    .filter(field -> !"sequence".equals(field.getName()))
                     .allMatch(field -> {
-                        if (field.getName().equals("sequence"))
-                            return true;
+                        Object o1, o2;
                         try {
-                            Object o1 = field.get(this);
-                            Object o2 = field.get(si);
-                            return (o1 == null && o2 == null)
-                                    || (o1 != null && o2 != null && o1.equals(o2));
+                            o1 = field.get(this);
+                            o2 = field.get(si);
                         } catch (IllegalAccessException e) {
-                            throw new IllegalStateException(e);
+                            throw new AssertionError(e); // should not happen
                         }
+                        return Objects.equal(o1, o2);
                     });
         }
-        
-        @Override
-        public String toString() {
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                return mapper.writeValueAsString(this);
-            } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
     }
     
-    protected void merge(StatementInfo statementInfo) {
-        String data = statementInfo.toString();
+    private static class InstitutionLinkDTO {
         
-        //System.out.println(data);
+        public String institution;
         
-        Client client = ClientBuilder.newClient();
+        public String reference;
         
-        HttpAuthenticationFeature feature
-                = HttpAuthenticationFeature.basic(instanceInfo.username, instanceInfo.password);
-        client.register(feature);
+        @JsonProperty("account_id")
+        public int accountId;
         
-        WebTarget target = client.target(instanceInfo.url).path("statement");
-        
-        Response response = target.request(MediaType.TEXT_PLAIN)
-                .post(Entity.entity(statementInfo, MediaType.APPLICATION_JSON_TYPE));
-        
-        logger.info(response.getStatus());
-        logger.info(response.readEntity(String.class));
     }
-    
 }

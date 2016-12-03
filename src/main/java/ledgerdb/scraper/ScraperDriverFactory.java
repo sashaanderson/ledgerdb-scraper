@@ -11,10 +11,11 @@ public class ScraperDriverFactory {
                 + siteInfo.institution
                 + ".ScraperDriver";
         Class c = Class.forName(name);
-        ScraperDriverBase scraperDriver = (ScraperDriverBase)c.newInstance();
-        scraperDriver.setSiteInfo(siteInfo);
-        scraperDriver.setInstanceInfo(instanceInfo);
-        return scraperDriver;
+        ScraperDriverBase s = (ScraperDriverBase)c.newInstance();
+        s.setSiteInfo(siteInfo);
+        s.setInstanceInfo(instanceInfo);
+        s.init();
+        return s;
     }
     
 }
