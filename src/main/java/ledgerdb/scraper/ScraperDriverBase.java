@@ -2,6 +2,7 @@ package ledgerdb.scraper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -14,14 +15,20 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
 
-public abstract class ScraperDriverBase implements Runnable {
+public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger();
     
     protected SiteInfo siteInfo;
+    protected WebDriver driver;
+    
     private InstanceInfo instanceInfo;
     private Client client;
+    
+    private int countProcessed = 0, countInserted = 0;
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -32,6 +39,8 @@ public abstract class ScraperDriverBase implements Runnable {
     }
     
     void init() {
+        driver = new FirefoxDriver();
+        
         client = ClientBuilder.newClient();
         HttpAuthenticationFeature feature
                 = HttpAuthenticationFeature.basic(
@@ -61,16 +70,36 @@ public abstract class ScraperDriverBase implements Runnable {
         checkStatus(r);
         
         String body = r.readEntity(String.class);
-        logger.info("Server response: " + body);
+        logger.debug("Server response: " + body);
+        Preconditions.checkState(body.matches("^\\d+$"));
+        
+        countProcessed++;
+        if (!body.equals("0"))
+            countInserted++;
     }
     
     private void checkStatus(Response r) {
         String message = r.getStatus() + " " + r.getStatusInfo().getReasonPhrase();
-        if (r.getStatus() != 200) { // 200 OK
-            logger.error(message);
-            throw new IllegalStateException("Server request failed");
+        if (r.getStatus() == 200) { // 200 OK
+            logger.debug(message);
         } else {
-            logger.info(message);
+            logger.error(message);
+            try {
+                String body = r.readEntity(String.class);
+                throw new IllegalStateException("Server request failed: " + body);
+            } catch (Exception e) {
+                throw new IllegalStateException("Server request failed");
+            }
+        }
+    }
+    
+    @Override
+    public void close() throws Exception {
+        logger.info(String.format("%d processed, %d inserted", countProcessed, countInserted));
+        if (driver != null) {
+            driver.quit();
+            driver = null;
+            logger.debug("WebDriver has been closed");
         }
     }
     

@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.Select;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -20,44 +19,18 @@ public class ScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
     
+    private boolean loggedIn = false;
+    
     @Override
     public void run() {
-        FirefoxDriver driver = new FirefoxDriver();
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         
-        String url = "https://www.txn.banking.pcfinancial.ca/";
-        logger.debug("Connecting to " + url);
-        driver.get(url);        
+        logger.info("Connecting to " + siteInfo.url);
+        driver.get(siteInfo.url);        
         
-        // Online Banking Sign In
-        
-        driver.findElement(By.xpath("//h1[text()='Online Banking Sign In']"));
-        logger.debug("Online Banking Sign In");
+        logIn();
         
         WebElement e1, e2;
-        e1 = driver.findElement(By.xpath("//label[contains(.,'Card Number:')]"));
-        checkState("Card Number:".equals(e1.getText()));
-        
-        e2 = e1.findElement(By.xpath("following::input"));
-        e2.sendKeys(siteInfo.logon);
-        
-        e1 = driver.findElement(By.xpath("//label[contains(.,'Password:')]"));
-        e2 = e1.findElement(By.xpath("following::input"));
-        e2.sendKeys(siteInfo.password);
-        Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
-        e2.sendKeys(Keys.ENTER);
-        logger.debug("Logging in...");
-        // LOADING...
-        
-        // Account Summary
-        // Welcome, MR XXX XX. Customer number: 0001234567.
-        // Last visit: MMM dd, yyyy at HH:mm p.m. ET.
-
-        driver.findElement(By.xpath("//header/h1[text()='Account Summary']"));
-        driver.findElement(By.xpath("//section[@class='user-info']"));
-        checkState(driver.getTitle().startsWith("Account Summary - "));
-        checkState(driver.getTitle().endsWith("- Online Banking"));
-        logger.debug("Account Summary");
         
         // Deposit Accounts
         e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
@@ -173,14 +146,56 @@ public class ScraperDriver extends ScraperDriverBase {
             }); // forEach
         } // for
 
+        logOut();
+    }
+    
+    private void logIn() {
+        // Online Banking Sign In
+        
+        driver.findElement(By.xpath("//h1[text()='Online Banking Sign In']"));
+        logger.debug("Online Banking Sign In");
+        
+        WebElement e1, e2;
+        e1 = driver.findElement(By.xpath("//label[contains(.,'Card Number:')]"));
+        checkState("Card Number:".equals(e1.getText()));
+        
+        e2 = e1.findElement(By.xpath("following::input"));
+        e2.sendKeys(siteInfo.logon);
+        
+        e1 = driver.findElement(By.xpath("//label[contains(.,'Password:')]"));
+        e2 = e1.findElement(By.xpath("following::input"));
+        e2.sendKeys(siteInfo.password);
+        Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
+        e2.sendKeys(Keys.ENTER);
+        logger.debug("Logging in...");
+        // LOADING...
+        
+        // Account Summary
+        // Welcome, MR XXX XX. Customer number: 0001234567.
+        // Last visit: MMM dd, yyyy at HH:mm p.m. ET.
+        
+        driver.findElement(By.xpath("//header/h1[text()='Account Summary']"));
+        driver.findElement(By.xpath("//section[@class='user-info']"));
+        checkState(driver.getTitle().startsWith("Account Summary - "));
+        checkState(driver.getTitle().endsWith("- Online Banking"));
+        logger.debug("Account Summary");
+        
+        this.loggedIn = true;
+    }
+    
+    private void logOut() {
         logger.debug("Logging out...");
-        e1 = driver.findElement(By.xpath("//button[text()='sign out']/.."));
+        WebElement e1 = driver.findElement(By.xpath("//button[text()='sign out']/.."));
         e1.click();
 
         driver.findElement(By.xpath("//h1[text()='You have signed off']"));
-        
-        driver.quit();
-        logger.debug("Done");
+        this.loggedIn = false;
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (loggedIn) logOut();
+        super.close();
     }
 
 }

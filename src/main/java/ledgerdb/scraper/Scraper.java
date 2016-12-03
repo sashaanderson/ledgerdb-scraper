@@ -52,6 +52,7 @@ public class Scraper {
         SiteInfo siteInfo = new SiteInfoBuilder()
                 .set("logon", KPScript.getEntry(siteName, "UserName"))
                 .set("password", KPScript.getEntry(siteName, "Password"))
+                .set("url", KPScript.getEntry(siteName, "URL"))
                 .set("notes", KPScript.getEntry(siteName, "Notes"))
                 .build();
         
@@ -61,9 +62,11 @@ public class Scraper {
                 .set("password", KPScript.getEntry(instanceName, "Password"))
                 .build();
         
-        ScraperDriverBase driver = ScraperDriverFactory.create(siteInfo, instanceInfo);
-        driver.run();
-        //TODO: try-finally { driver.close() } or try-with-resources
+        try (ScraperDriverBase driver =
+                ScraperDriverFactory.create(siteInfo, instanceInfo)) {
+            logger.debug("Running driver for institution: " + siteInfo.institution);
+            driver.run();
+        }
     }
     
 }
