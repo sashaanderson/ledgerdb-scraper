@@ -14,6 +14,7 @@ import org.openqa.selenium.io.IOUtils;
 public class KPScript {
 
     public static final String DEFAULT_KDBX_FILE = "ledgerdb-scraper.kdbx";
+    public static final String DEFAULT_KDBX_PW = "@ledgerdb-scraper.pw";
     
     private static final String EOL = System.lineSeparator();
     
@@ -22,22 +23,20 @@ public class KPScript {
     private KPScript() {}
     
     public static String getEntry(String title, String field) throws IOException {
-        String kdbxFile = System.getProperty("kdbx.file");
-        if (kdbxFile == null)
-            kdbxFile = DEFAULT_KDBX_FILE;
-        if (!Files.exists(Paths.get(kdbxFile)))
-            throw new FileNotFoundException(kdbxFile);
+        String file = System.getProperty("kdbx.file", DEFAULT_KDBX_FILE);
+        if (!Files.exists(Paths.get(file)))
+            throw new FileNotFoundException(file);
         
-        String kdbxPw = System.getProperty("kdbx.pw");
-        if (kdbxPw != null && kdbxPw.startsWith("@")) {
-            kdbxPw = Files.readAllLines(Paths.get(kdbxPw.substring(1))).get(0);
+        String pw = System.getProperty("kdbx.pw", DEFAULT_KDBX_PW);
+        if (pw != null && pw.startsWith("@")) {
+            pw = Files.readAllLines(Paths.get(pw.substring(1))).get(0);
         }
         
         ArrayList<String> args = new ArrayList<>();
         args.add("KPScript");
         args.add("-c:GetEntryString");
-        args.add(kdbxFile);
-        args.add("-pw:" + kdbxPw);
+        args.add(file);
+        args.add("-pw:" + pw);
         args.add("-ref-Title:" + title);
         args.add("-FailIfNoEntry");
         args.add("-Field:" + field);

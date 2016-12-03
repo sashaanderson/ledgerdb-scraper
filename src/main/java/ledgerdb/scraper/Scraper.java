@@ -8,11 +8,17 @@ public class Scraper {
     private static final Logger logger = LogManager.getLogger();
     
     private static void usage() {
-        System.err.println("Usage: java [-D<name>=<value>] ledgerdb.scraper.Scraper SITE [INSTANCE]");
+        System.err.println("Usage: java [-Dname=value...] ledgerdb.scraper.Scraper SITE [INSTANCE]");
         System.err.println();
         System.err.println("Properties:");
-        System.err.println("  kdbx.file     Path to .kdbx file (default: " + KPScript.DEFAULT_KDBX_FILE + ")");
-        System.err.println("  kdbx.pw       Password to the .kdbx file");
+        System.err.format("  %-14s %s (default: %s)%n",
+                "kdbx.file",
+                "Path to .kdbx file",
+                KPScript.DEFAULT_KDBX_FILE);
+        System.err.format("  %-14s %s (default: %s)%n",
+                "kdbx.pw",
+                "Password to the .kdbx file",
+                KPScript.DEFAULT_KDBX_PW);
         System.err.println();
         System.exit(2);
     }
