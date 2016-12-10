@@ -121,10 +121,10 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     protected class StatementDTO {
         public StatementDTO() {}
         
-        @JsonProperty("statement_date")
+        @JsonProperty("statementDate")
         public String date;
         
-        @JsonProperty("account_id")
+        @JsonProperty("accountId")
         public int accountId;
         
         public BigDecimal amount;
@@ -155,7 +155,6 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         public String reference;
         
-        @JsonProperty("account_id")
         public int accountId;
         
     }
