@@ -129,7 +129,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         public BigDecimal amount;
         public String description;
-        public String source;
+        public String source = "";
         
         public int sequence;
         
