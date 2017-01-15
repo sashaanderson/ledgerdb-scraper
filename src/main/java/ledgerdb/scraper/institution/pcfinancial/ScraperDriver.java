@@ -3,7 +3,6 @@ package ledgerdb.scraper.institution.pcfinancial;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import ledgerdb.scraper.ScraperDriverBase;
@@ -87,11 +86,9 @@ public class ScraperDriver extends ScraperDriverBase {
             checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
             logger.debug("Got " + trList.size() + " transactions");
 
-            List<StatementDTO> ss = new ArrayList<>(trList.size());
-
             final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMM d, yyyy");
-            trList.stream().skip(1).forEach(tr -> {
-                int j = ss.size() + 1;
+            for (int j = 1; j < trList.size(); j++) {
+                WebElement tr = trList.get(j);
                 logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
                 
                 List<WebElement> tdList = tr.findElements(By.xpath("./td"));
@@ -132,18 +129,10 @@ public class ScraperDriver extends ScraperDriverBase {
                 if (sign < 0)
                     s.amount = s.amount.negate();
 
-                s.source = "";
-
-                s.sequence = (int)ss.stream()
-                        .filter(si2 -> si2.equals(s))
-                        .count()
-                        + 1;
-
                 merge(s);
-                ss.add(s);
                 
                 logger.debug("Done merged transaction " + j);
-            }); // forEach
+            } // for
         } // for
 
         logOut();

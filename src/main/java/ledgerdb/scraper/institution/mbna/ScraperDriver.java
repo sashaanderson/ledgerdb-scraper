@@ -11,7 +11,6 @@ import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,9 +61,6 @@ public class ScraperDriver extends ScraperDriverBase {
         checkState(head.get(3).getText().replaceAll("\\s+", " ").startsWith("Reference number"));
         checkState(head.get(4).getText().startsWith("Amount"));
 
-        //TODO: extract sequence counter to ScraperDriverBase
-        List<StatementDTO> ss = new ArrayList<>(rows.size());
-        
         final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         for (int i = 1; i < rows.size(); i++) {
             logger.debug("Parsing transaction " + i + " out of " + (rows.size() - 1));
@@ -90,12 +86,7 @@ public class ScraperDriver extends ScraperDriverBase {
             s.amount = new BigDecimal(amount);
             s.amount = s.amount.negate();
             
-            s.sequence = (int)ss.stream()
-                    .filter(si2 -> si2.equals(s))
-                    .count()
-                    + 1;
             merge(s);
-            ss.add(s);
 
             logger.debug("Done merged transaction " + i);
         }

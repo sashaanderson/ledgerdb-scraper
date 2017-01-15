@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -29,6 +31,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     private Client client;
     
     private int countProcessed = 0, countInserted = 0;
+    private List<StatementDTO> processedStatements = new ArrayList<>();
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -63,6 +66,11 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     }
     
     protected void merge(StatementDTO s) {
+        s.sequence = (int)processedStatements.stream()
+                .filter(si2 -> si2.equals(s))
+                .count()
+                + 1;
+
         WebTarget target = client.target(instanceInfo.url).path("statement");
         
         Response r = target.request(MediaType.TEXT_PLAIN)
@@ -73,6 +81,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         logger.debug("Server response: " + body);
         Preconditions.checkState(body.matches("^\\d+$"));
         
+        processedStatements.add(s);
         countProcessed++;
         if (!body.equals("0"))
             countInserted++;
@@ -129,9 +138,11 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         public BigDecimal amount;
         public String description;
-        public String source = "";
         
-        public int sequence;
+        public final String source = ""; //TODO - remove column from db
+        
+        int sequence;
+        public int getSequence() { return sequence; }
         
         public boolean equals(StatementDTO si) {
             return Arrays.stream(getClass().getFields())
@@ -142,7 +153,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
                             o1 = field.get(this);
                             o2 = field.get(si);
                         } catch (IllegalAccessException e) {
-                            throw new AssertionError(e); // should not happen
+                            throw new IllegalStateException(e); // should not happen
                         }
                         return Objects.equal(o1, o2);
                     });
