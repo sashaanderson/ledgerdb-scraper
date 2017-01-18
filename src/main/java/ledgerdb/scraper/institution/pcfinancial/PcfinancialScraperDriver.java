@@ -25,7 +25,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
     public void run() {
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         
-        logger.info("Connecting to " + siteInfo.url);
+        logger.debug("Connecting to " + siteInfo.url);
         driver.get(siteInfo.url);        
         
         logIn();
@@ -64,11 +64,11 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             e1 = driver.findElement(By.xpath("//div[@class='account-selector']//select"));
             Select sel = new Select(e1);
             String accountName = sel.getFirstSelectedOption().getText();
-            logger.info("Account name: " + accountName);
+            logger.debug("Account name: " + accountName);
             
             String reference = accountName.replaceFirst(".*\\(([0-9]+)\\).*", "$1");
             checkState(reference.matches("^[0-9]+$"));
-            logger.info("Reference: " + reference);
+            logger.debug("Reference: " + reference);
             
             List<WebElement> uiAlertList = driver.findElements(By.xpath("//ui-alert/div[@class='ui-text']"));
             if (uiAlertList.size() > 0) {
