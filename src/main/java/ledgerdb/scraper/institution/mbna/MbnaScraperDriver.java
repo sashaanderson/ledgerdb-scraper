@@ -5,9 +5,7 @@ import ledgerdb.scraper.ScraperDriverBase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +22,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
     public void run() {
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         
-        logger.info("Connecting to " + siteInfo.url);
+        logger.debug("Connecting to " + siteInfo.url);
         driver.get(siteInfo.url);
         
         logIn();
@@ -39,7 +37,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         Matcher matcher = pattern.matcher(reference);
         checkState(matcher.find());
         reference = matcher.group(1);
-        logger.info("Reference: " + reference);
+        logger.debug("Reference: " + reference);
         
         int accountId = super.getAccountId(reference);
         
@@ -102,10 +100,22 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
         input.sendKeys(siteInfo.password);
         Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
-        input.sendKeys(Keys.ENTER);
+        
+        input = driver.findElement(By.xpath("//input[@id='login' and @value='Login' and @type='submit']"));
+        input.click();
         logger.debug("Logging in...");
         
-        // driver.findElement(By.xpath("//div[@id='errorMessage']"));
+        String marker = "//div[@id='myAccounts-heading']";
+        driver.findElements(By.xpath(marker));
+        
+        List<WebElement> a = driver.findElements(By.xpath("//div[@id='errorMessage']"));
+        if (a.size() > 0) {
+            logger.error("Login failed: " + a.get(0).getText());
+            throw new IllegalStateException("Login failed");
+        }
+        
+        driver.findElement(By.xpath(marker));
+        logger.debug("Logged in successfully");
     }
     
     private void logOut() {
