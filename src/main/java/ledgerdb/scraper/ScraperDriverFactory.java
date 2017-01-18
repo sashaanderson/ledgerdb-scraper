@@ -1,16 +1,27 @@
 package ledgerdb.scraper;
 
+import com.google.common.reflect.ClassPath;
+import java.io.IOException;
+import org.apache.commons.lang3.ClassUtils;
+
 public class ScraperDriverFactory {
 
     public static ScraperDriverBase create(SiteInfo siteInfo, InstanceInfo instanceInfo)
-            throws ClassNotFoundException,
-                    InstantiationException,
-                    IllegalAccessException {
-        String name = ScraperDriverFactory.class.getPackage().getName()
+            throws IOException,
+                InstantiationException,
+                IllegalAccessException {
+        
+        String packageName = ScraperDriverFactory.class.getPackage().getName()
                 + ".institution."
-                + siteInfo.institution
-                + ".ScraperDriver";
-        Class c = Class.forName(name);
+                + siteInfo.institution;
+        ClassPath cp = ClassPath.from(ClassLoader.getSystemClassLoader());
+        Class c = cp.getTopLevelClasses(packageName)
+                .stream()
+                .map(classInfo -> classInfo.load())
+                .filter(cc -> ScraperDriverBase.class.isAssignableFrom(cc))
+                .findFirst()
+                .get();
+        
         ScraperDriverBase s = (ScraperDriverBase)c.newInstance();
         s.setSiteInfo(siteInfo);
         s.setInstanceInfo(instanceInfo);

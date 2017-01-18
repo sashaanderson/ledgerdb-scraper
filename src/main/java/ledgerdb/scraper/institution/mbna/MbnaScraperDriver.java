@@ -14,8 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import static com.google.common.base.Preconditions.checkState;
 
-public class ScraperDriver extends ScraperDriverBase {
+public class MbnaScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
     
@@ -103,6 +104,8 @@ public class ScraperDriver extends ScraperDriverBase {
         Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
         input.sendKeys(Keys.ENTER);
         logger.debug("Logging in...");
+        
+        // driver.findElement(By.xpath("//div[@id='errorMessage']"));
     }
     
     private void logOut() {

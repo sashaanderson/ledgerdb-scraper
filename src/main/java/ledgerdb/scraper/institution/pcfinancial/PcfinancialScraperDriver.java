@@ -13,8 +13,9 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.checkState;
 
-public class ScraperDriver extends ScraperDriverBase {
+public class PcfinancialScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
     
