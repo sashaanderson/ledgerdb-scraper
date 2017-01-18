@@ -19,13 +19,14 @@ import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger();
     
     protected SiteInfo siteInfo;
-    protected WebDriver driver;
+    protected RemoteWebDriver driver;
     
     private InstanceInfo instanceInfo;
     private Client client;
