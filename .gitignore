@@ -2,5 +2,6 @@ config.yml
 ledgerdb-scraper.kdbx
 ledgerdb-scraper.log*
 ledgerdb-scraper.pw
+log/
 nbactions.xml
 target/

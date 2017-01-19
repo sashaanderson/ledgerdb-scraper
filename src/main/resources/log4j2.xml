@@ -7,9 +7,19 @@
       <ThresholdFilter level="info"/>
     </Console>
 
-    <RollingFile name="FILE"
-        fileName="ledgerdb-scraper.log"
-        filePattern="ledgerdb-scraper.log.%d{MM-dd-yyyy}">
+    <RollingFile name="FILE1"
+        fileName="log/ledgerdb-scraper.log"
+        filePattern="log/ledgerdb-scraper.log.%d{MM-dd-yyyy}">
+      <PatternLayout pattern="%d [%t] %-5level %logger{-2} - %msg%n%throwable"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+      </Policies>
+      <ThresholdFilter level="info"/>
+    </RollingFile>
+
+    <RollingFile name="FILE2"
+        fileName="log/debug/debug.log"
+        filePattern="log/debug/debug.log.%d{MM-dd-yyyy}">
       <PatternLayout pattern="%d [%t] %-5level %logger{-2} - %msg%n%throwable"/>
       <Policies>
         <TimeBasedTriggeringPolicy />
@@ -21,7 +31,8 @@
   <Loggers>
     <Root level="debug">
       <AppenderRef ref="STDOUT"/>
-      <AppenderRef ref="FILE"/>
+      <AppenderRef ref="FILE1"/>
+      <AppenderRef ref="FILE2"/>
     </Root>
   </Loggers>
 
