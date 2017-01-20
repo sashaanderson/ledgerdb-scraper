@@ -1,18 +1,18 @@
 package ledgerdb.scraper.institution.mbna;
 
+import static com.google.common.base.Preconditions.checkState;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import ledgerdb.scraper.ScraperDriverBase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import static com.google.common.base.Preconditions.checkState;
 
 public class MbnaScraperDriver extends ScraperDriverBase {
 
@@ -24,6 +24,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         logger.debug("Connecting to " + siteInfo.url);
         driver.get(siteInfo.url);
+        Sleeper.sleepBetween(4, 7, TimeUnit.SECONDS);
         
         logIn();
         
@@ -96,6 +97,11 @@ public class MbnaScraperDriver extends ScraperDriverBase {
     private void logIn() {
         WebElement input;
         input = driver.findElement(By.xpath("//input[@id='usernameInput']"));
+        for (int i = 1; i <= 5; i++) {
+            if (input.isDisplayed()) break;
+            Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
+            input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
+        }
         input.sendKeys(siteInfo.logon);
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
         input.sendKeys(siteInfo.password);
