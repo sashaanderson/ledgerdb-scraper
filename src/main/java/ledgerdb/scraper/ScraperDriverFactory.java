@@ -2,7 +2,6 @@ package ledgerdb.scraper;
 
 import com.google.common.reflect.ClassPath;
 import java.io.IOException;
-import org.apache.commons.lang3.ClassUtils;
 
 public class ScraperDriverFactory {
 
