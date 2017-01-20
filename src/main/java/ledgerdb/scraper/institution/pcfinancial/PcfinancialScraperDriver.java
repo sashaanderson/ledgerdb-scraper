@@ -1,19 +1,19 @@
 package ledgerdb.scraper.institution.pcfinancial;
 
+import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import ledgerdb.scraper.ScraperDriverBase;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Preconditions.checkState;
 
 public class PcfinancialScraperDriver extends ScraperDriverBase {
 
@@ -72,9 +72,15 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             
             List<WebElement> uiAlertList = driver.findElements(By.xpath("//ui-alert/div[@class='ui-text']"));
             if (uiAlertList.size() > 0) {
-                // "There are no transactions found that meet your request."
-                logger.info("Alert: " + uiAlertList.get(0).getText());
-                logger.info("Skipping account " + reference + " because of the alert");
+                String text = uiAlertList.get(0).getText();
+                Level level;
+                if (text.startsWith("There are no transactions found that meet your request")) {
+                    level = Level.DEBUG;
+                } else {
+                    level = Level.WARN;
+                }
+                logger.log(level, "Alert says, \"" + text + "\"");
+                logger.log(level, "Skipping account " + reference + " because of the alert");
                 continue;
             }
             
