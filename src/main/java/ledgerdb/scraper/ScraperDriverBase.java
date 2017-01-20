@@ -3,6 +3,7 @@ package ledgerdb.scraper;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +18,6 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -32,7 +32,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     private Client client;
     
     private int countProcessed = 0, countInserted = 0;
-    private List<StatementDTO> processedStatements = new ArrayList<>();
+    private final List<StatementDTO> processedStatements = new ArrayList<>();
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -67,6 +67,13 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     }
     
     protected void merge(StatementDTO s) {
+        if (processedStatements.isEmpty()) {
+            System.out.print(s.accountId);
+        } else if (Iterables.getLast(processedStatements).accountId != s.accountId) {
+            System.out.println();
+            System.out.print(s.accountId);
+        }
+        
         s.sequence = (int)processedStatements.stream()
                 .filter(si2 -> si2.equals(s))
                 .count()
@@ -78,13 +85,15 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
                 .post(Entity.entity(s, MediaType.APPLICATION_JSON_TYPE));
         checkStatus(r);
         
-        String body = r.readEntity(String.class);
-        logger.debug("Server response: " + body);
-        Preconditions.checkState(body.matches("^\\d+$"));
+        String status = r.readEntity(String.class);
+        logger.debug("Server response: " + status);
+        System.out.print(' ');
+        System.out.print(status);
+        Preconditions.checkState(status.matches("^\\d+$"));
         
         processedStatements.add(s);
         countProcessed++;
-        if (!body.equals("0"))
+        if (!status.equals("0"))
             countInserted++;
     }
     
@@ -105,6 +114,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     
     @Override
     public void close() throws Exception {
+        System.out.println();
         logger.info(String.format("%d processed, %d inserted", countProcessed, countInserted));
         if (driver != null) {
             driver.quit();
