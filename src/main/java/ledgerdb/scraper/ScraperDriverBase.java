@@ -1,20 +1,8 @@
 package ledgerdb.scraper;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.List;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import ledgerdb.scraper.dto.StatementDTO;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
