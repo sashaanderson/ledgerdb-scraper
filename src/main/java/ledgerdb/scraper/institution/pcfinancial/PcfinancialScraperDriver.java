@@ -52,7 +52,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             if (i >= accountList.size()) break;
         
             e2 = accountList.get(i).findElement(By.xpath(".//a"));
-            Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
+            SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
             e2.click();
             // LOADING
 
@@ -161,7 +161,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         e1 = driver.findElement(By.xpath("//label[contains(.,'Password:')]"));
         e2 = e1.findElement(By.xpath("following::input"));
         e2.sendKeys(siteInfo.password);
-        Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
+        SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
         e2.sendKeys(Keys.ENTER);
         logger.debug("Logging in...");
         // LOADING...

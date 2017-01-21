@@ -18,6 +18,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
@@ -28,6 +29,8 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger();
     
+    protected static final Sleeper SLEEPER = new Sleeper();
+    
     protected SiteInfo siteInfo;
     protected RemoteWebDriver driver;
     
@@ -36,8 +39,6 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     
     private int countProcessed = 0, countInserted = 0;
     private final List<StatementDTO> processedStatements = new ArrayList<>();
-    
-    private final HashMap<String, DateTimeFormatter> dtfCache = new HashMap<>();
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -69,15 +70,6 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         InstitutionLinkDTO i = r.readEntity(InstitutionLinkDTO.class);
         return i.accountId;
-    }
-    
-    protected LocalDate parseDate(String date, String format) {
-        DateTimeFormatter dtf = dtfCache.get(date);
-        if (dtf == null) {
-            dtf = DateTimeFormatter.ofPattern(format);
-            dtfCache.put(format, dtf);
-        }
-        return LocalDate.parse(date, dtf);
     }
     
     protected void merge(StatementDTO s) {
@@ -137,21 +129,6 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         }
     }
     
-    protected static class Sleeper {
-        private Sleeper() {}
-        
-        public static void sleepBetween(int minUnit, int maxUnit, TimeUnit unit) {
-            long minTime = TimeUnit.MILLISECONDS.convert(minUnit, unit);
-            long maxTime = TimeUnit.MILLISECONDS.convert(minUnit, unit);
-            long time = minTime + (long)(Math.random() * (maxTime - minTime));
-            try {
-                Thread.sleep(time);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-    
     protected class StatementDTO {
         public StatementDTO() {}
         
@@ -162,6 +139,9 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         }
         public void setDate(String date) {
             this.date = date;
+        }
+        public void setDate(String date, String format) {
+            setDate(LocalDate.parse(date, DateTimeFormatter.ofPattern(format)));
         }
         //TODO - private fields, public setters/getters
         

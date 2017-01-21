@@ -24,7 +24,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         logger.debug("Connecting to " + siteInfo.url);
         driver.get(siteInfo.url);
-        Sleeper.sleepBetween(4, 7, TimeUnit.SECONDS);
+        SLEEPER.sleepBetween(4, 7, TimeUnit.SECONDS);
         
         logIn();
         
@@ -99,13 +99,13 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         input = driver.findElement(By.xpath("//input[@id='usernameInput']"));
         for (int i = 1; i <= 5; i++) {
             if (input.isDisplayed()) break;
-            Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
+            SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
             input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
         }
         input.sendKeys(siteInfo.logon);
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
         input.sendKeys(siteInfo.password);
-        Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
+        SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
         
         input = driver.findElement(By.xpath("//input[@id='login' and @value='Login' and @type='submit']"));
         input.click();

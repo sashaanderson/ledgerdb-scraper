@@ -60,7 +60,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             //link = driver.findElement(By.xpath("//a[@title='Display last 30 days']"));
             //link.click();
 
-            Sleeper.sleepBetween(5, 10, TimeUnit.SECONDS); // wait for page to load
+            SLEEPER.sleepBetween(5, 10, TimeUnit.SECONDS); // wait for page to load
             e = driver.findElement(By.xpath("//section[@id='pdaTransactionsTable']"));
             checkState("Bank Account Details - RBC Online Banking".equals(driver.getTitle()));
             checkState(1 == e.findElements(By.xpath(".//table")).size());
@@ -76,7 +76,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
                 
                 StatementDTO s = new StatementDTO();
                 s.accountId = accountId;
-                s.setDate(parseDate(cells.get(0).getText(), "MMM d, yyyy"));
+                s.setDate(cells.get(0).getText(), "MMM d, yyyy");
                 
                 String description = cells.get(1).getText();
                 description = description.replaceAll("\\p{Space}+", " ");
