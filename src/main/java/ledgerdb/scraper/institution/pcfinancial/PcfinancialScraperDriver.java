@@ -2,11 +2,10 @@ package ledgerdb.scraper.institution.pcfinancial;
 
 import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.dto.StatementDTO;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,7 +92,6 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
             logger.debug("Got " + trList.size() + " transactions");
 
-            final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMM d, yyyy");
             for (int j = 1; j < trList.size(); j++) {
                 WebElement tr = trList.get(j);
                 logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
@@ -107,13 +105,11 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 checkState(tdList.get(4).getAttribute("class").equals("balance"));
 
                 StatementDTO s = new StatementDTO();
-                //s.reference = reference;
-                s.accountId = accountId;
+                s.setAccountId(accountId);
 
-                LocalDate date = LocalDate.parse(tdList.get(0).getText(), dtf);
-                s.date = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                s.setDate(tdList.get(0).getText(), "MMM d, yyyy");
 
-                s.description = tdList.get(1).getText();
+                s.setDescription(tdList.get(1).getText());
 
                 String dr = tdList.get(2).getText();
                 String cr = tdList.get(3).getText();
@@ -132,9 +128,10 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 }
 
                 checkState(amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$"));
-                s.amount = new BigDecimal(amount.replaceAll("[^\\d.]", ""));
+                amount = amount.replaceAll("[^\\d.]", "");
                 if (sign < 0)
-                    s.amount = s.amount.negate();
+                    amount = "-" + amount;
+                s.setAmount(new BigDecimal(amount));
 
                 merge(s);
                 

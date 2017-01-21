@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.dto.StatementDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,12 +76,12 @@ public class RbcScraperDriver extends ScraperDriverBase {
                 checkState(cells.size() == 5);
                 
                 StatementDTO s = new StatementDTO();
-                s.accountId = accountId;
+                s.setAccountId(accountId);
                 s.setDate(cells.get(0).getText(), "MMM d, yyyy");
                 
                 String description = cells.get(1).getText();
                 description = description.replaceAll("\\p{Space}+", " ");
-                s.description = description;
+                s.setDescription(description);
                 
                 String amount1 = cells.get(2).getText(); // WITHDRAWALS, negative
                 String amount2 = cells.get(3).getText(); // DEPOSIT, positive
@@ -89,7 +90,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
                 checkState(amount.matches("^-?\\$[\\d,]+\\.\\d\\d$")); // -$1,000.00
                 checkState(amount == (amount.startsWith("-") ? amount1 : amount2));
                 amount = amount.replaceAll("[^-\\d.]", "");
-                s.amount = new BigDecimal(amount);
+                s.setAmount(new BigDecimal(amount));
                 
                 merge(s);
                 logger.debug("Done merged transaction " + j);

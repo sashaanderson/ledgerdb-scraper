@@ -1,23 +1,16 @@
 package ledgerdb.scraper;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import ledgerdb.scraper.dto.StatementDTO;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,16 +67,17 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     
     protected void merge(StatementDTO s) {
         if (processedStatements.isEmpty()) {
-            System.out.print(s.accountId);
-        } else if (Iterables.getLast(processedStatements).accountId != s.accountId) {
+            System.out.print(s.getAccountId());
+        } else if (Iterables.getLast(processedStatements).getAccountId() != s.getAccountId()) {
             System.out.println();
-            System.out.print(s.accountId);
+            System.out.print(s.getAccountId());
         }
         
-        s.sequence = (int)processedStatements.stream()
-                .filter(si2 -> si2.equals(s))
+        int sequence = (int)processedStatements.stream()
+                .filter(si2 -> si2.equalsExceptSequence(s))
                 .count()
                 + 1;
+        s.setSequence(sequence);
 
         WebTarget target = client.target(instanceInfo.url).path("statement");
         
@@ -126,49 +120,6 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
             driver.quit();
             driver = null;
             logger.debug("WebDriver has been closed");
-        }
-    }
-    
-    protected class StatementDTO {
-        public StatementDTO() {}
-        
-        @JsonProperty("statementDate")
-        public String date;
-        public void setDate(LocalDate date) {
-            setDate(date.format(DateTimeFormatter.ISO_LOCAL_DATE));
-        }
-        public void setDate(String date) {
-            this.date = date;
-        }
-        public void setDate(String date, String format) {
-            setDate(LocalDate.parse(date, DateTimeFormatter.ofPattern(format)));
-        }
-        //TODO - private fields, public setters/getters
-        
-        @JsonProperty("accountId")
-        public int accountId;
-        
-        public BigDecimal amount;
-        public String description;
-        
-        public final String source = ""; //TODO - remove column from db
-        
-        int sequence;
-        public int getSequence() { return sequence; }
-        
-        public boolean equals(StatementDTO si) {
-            return Arrays.stream(getClass().getFields())
-                    .filter(field -> !"sequence".equals(field.getName()))
-                    .allMatch(field -> {
-                        Object o1, o2;
-                        try {
-                            o1 = field.get(this);
-                            o2 = field.get(si);
-                        } catch (IllegalAccessException e) {
-                            throw new IllegalStateException(e); // should not happen
-                        }
-                        return Objects.equal(o1, o2);
-                    });
         }
     }
     

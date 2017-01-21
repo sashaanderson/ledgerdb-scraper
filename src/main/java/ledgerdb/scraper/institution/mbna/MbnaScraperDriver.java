@@ -2,13 +2,12 @@ package ledgerdb.scraper.institution.mbna;
 
 import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.dto.StatementDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -61,7 +60,6 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         checkState(head.get(3).getText().replaceAll("\\s+", " ").startsWith("Reference number"));
         checkState(head.get(4).getText().startsWith("Amount"));
 
-        final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         for (int i = 1; i < rows.size(); i++) {
             logger.debug("Parsing transaction " + i + " out of " + (rows.size() - 1));
             
@@ -69,22 +67,22 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             checkState(a.size() == 5);
             
             StatementDTO s = new StatementDTO();
-            s.accountId = accountId;
+            s.setAccountId(accountId);
             
             if (a.get(1).getText().isEmpty() && "TEMP".equals(a.get(3).getText())) {
                 logger.debug("Skipped TEMP transaction at row " + i);
                 continue;
             }
-            LocalDate date = LocalDate.parse(a.get(1).getText(), dtf);
-            s.date = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            s.setDate(a.get(1).getText(), "MM/dd/yyyy");
             
-            s.description = a.get(2).getText();
+            s.setDescription(a.get(2).getText());
             
             String amount = a.get(4).getText();
             checkState(amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$"));
+            //TODO what if refund?
             amount = amount.replaceAll("[^\\d.]", "");
-            s.amount = new BigDecimal(amount);
-            s.amount = s.amount.negate();
+            amount = "-" + amount; // negate
+            s.setAmount(new BigDecimal(amount));
             
             merge(s);
 
@@ -103,9 +101,10 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
         }
         input.sendKeys(siteInfo.logon);
+        SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
         input.sendKeys(siteInfo.password);
-        SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
+        SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
         
         input = driver.findElement(By.xpath("//input[@id='login' and @value='Login' and @type='submit']"));
         input.click();
