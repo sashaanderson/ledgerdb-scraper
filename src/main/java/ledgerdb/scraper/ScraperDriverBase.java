@@ -5,8 +5,11 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.client.Client;
@@ -33,6 +36,8 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     
     private int countProcessed = 0, countInserted = 0;
     private final List<StatementDTO> processedStatements = new ArrayList<>();
+    
+    private final HashMap<String, DateTimeFormatter> dtfCache = new HashMap<>();
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -64,6 +69,15 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         InstitutionLinkDTO i = r.readEntity(InstitutionLinkDTO.class);
         return i.accountId;
+    }
+    
+    protected LocalDate parseDate(String date, String format) {
+        DateTimeFormatter dtf = dtfCache.get(date);
+        if (dtf == null) {
+            dtf = DateTimeFormatter.ofPattern(format);
+            dtfCache.put(format, dtf);
+        }
+        return LocalDate.parse(date, dtf);
     }
     
     protected void merge(StatementDTO s) {
@@ -143,6 +157,13 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         @JsonProperty("statementDate")
         public String date;
+        public void setDate(LocalDate date) {
+            setDate(date.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
+        public void setDate(String date) {
+            this.date = date;
+        }
+        //TODO - private fields, public setters/getters
         
         @JsonProperty("accountId")
         public int accountId;
