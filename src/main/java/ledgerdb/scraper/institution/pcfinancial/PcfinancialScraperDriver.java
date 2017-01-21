@@ -83,7 +83,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 continue;
             }
             
-            int accountId = getAccountId(reference);
+            int accountId = serverSession.getAccountId(reference);
 
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
@@ -133,7 +133,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                     amount = "-" + amount;
                 s.setAmount(new BigDecimal(amount));
 
-                merge(s);
+                serverSession.merge(s);
                 
                 logger.debug("Done merged transaction " + j);
             } // for

@@ -39,7 +39,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         reference = matcher.group(1);
         logger.debug("Reference: " + reference);
         
-        int accountId = super.getAccountId(reference);
+        int accountId = serverSession.getAccountId(reference);
         
         a.get(1).click();
         
@@ -84,7 +84,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             amount = "-" + amount; // negate
             s.setAmount(new BigDecimal(amount));
             
-            merge(s);
+            serverSession.merge(s);
 
             logger.debug("Done merged transaction " + i);
         }

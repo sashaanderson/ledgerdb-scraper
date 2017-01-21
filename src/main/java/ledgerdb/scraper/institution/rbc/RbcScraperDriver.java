@@ -53,7 +53,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             ref = ref.replaceAll("[^0-9]", "");
             checkState(ref.matches("^[0-9]+$"));
             
-            int accountId = super.getAccountId(ref);
+            int accountId = serverSession.getAccountId(ref);
             
             link.click();
             
@@ -92,7 +92,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
                 amount = amount.replaceAll("[^-\\d.]", "");
                 s.setAmount(new BigDecimal(amount));
                 
-                merge(s);
+                serverSession.merge(s);
                 logger.debug("Done merged transaction " + j);
             }
             

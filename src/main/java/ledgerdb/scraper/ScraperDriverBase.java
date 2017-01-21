@@ -28,10 +28,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     protected RemoteWebDriver driver;
     
     private InstanceInfo instanceInfo;
-    private Client client;
-    
-    private int countProcessed = 0, countInserted = 0;
-    private final List<StatementDTO> processedStatements = new ArrayList<>();
+    protected ServerSession serverSession;
     
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
@@ -42,94 +39,20 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     }
     
     void init() {
-        driver = new FirefoxDriver();
-        
-        client = ClientBuilder.newClient();
-        HttpAuthenticationFeature feature
-                = HttpAuthenticationFeature.basic(
-                        instanceInfo.username,
-                        instanceInfo.password);
-        client.register(feature);
-    }
-    
-    protected int getAccountId(String reference) {
-        WebTarget target = client.target(instanceInfo.url)
-                .path("institution_link")
-                .path(siteInfo.institution)
-                .path(reference);
-        Response r = target.request(MediaType.APPLICATION_JSON_TYPE)
-                .get();
-        checkStatus(r);
-        
-        InstitutionLinkDTO i = r.readEntity(InstitutionLinkDTO.class);
-        return i.accountId;
-    }
-    
-    protected void merge(StatementDTO s) {
-        if (processedStatements.isEmpty()) {
-            System.out.print(s.getAccountId());
-        } else if (Iterables.getLast(processedStatements).getAccountId() != s.getAccountId()) {
-            System.out.println();
-            System.out.print(s.getAccountId());
-        }
-        
-        int sequence = (int)processedStatements.stream()
-                .filter(si2 -> si2.equalsExceptSequence(s))
-                .count()
-                + 1;
-        s.setSequence(sequence);
-
-        WebTarget target = client.target(instanceInfo.url).path("statement");
-        
-        Response r = target.request(MediaType.TEXT_PLAIN)
-                .post(Entity.entity(s, MediaType.APPLICATION_JSON_TYPE));
-        checkStatus(r);
-        
-        String status = r.readEntity(String.class);
-        logger.debug("Server response: " + status);
-        System.out.print(' ');
-        System.out.print(status);
-        Preconditions.checkState(status.matches("^\\d+$"));
-        
-        processedStatements.add(s);
-        countProcessed++;
-        if (!status.equals("0"))
-            countInserted++;
-    }
-    
-    private void checkStatus(Response r) {
-        String message = r.getStatus() + " " + r.getStatusInfo().getReasonPhrase();
-        if (r.getStatus() == 200) { // 200 OK
-            logger.debug(message);
-        } else {
-            logger.error(message);
-            try {
-                String body = r.readEntity(String.class);
-                throw new IllegalStateException("Server request failed: " + body);
-            } catch (Exception e) {
-                throw new IllegalStateException("Server request failed");
-            }
-        }
+        this.driver = new FirefoxDriver();
+        this.serverSession = new ServerSession(instanceInfo, siteInfo.institution);
     }
     
     @Override
     public void close() throws Exception {
         System.out.println();
-        logger.info(String.format("%d processed, %d inserted", countProcessed, countInserted));
+        logger.info(String.format("%d processed, %d inserted",
+                serverSession.getCountProcessed(),
+                serverSession.getCountInserted()));
         if (driver != null) {
             driver.quit();
             driver = null;
             logger.debug("WebDriver has been closed");
         }
-    }
-    
-    private static class InstitutionLinkDTO {
-        
-        public String institution;
-        
-        public String reference;
-        
-        public int accountId;
-        
     }
 }
