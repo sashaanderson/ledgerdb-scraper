@@ -26,17 +26,15 @@ public class Scraper {
         if (args.length < 1)
             usage();
         
-        logger.info("Scraper started");
-
         String siteName = args[0];
-        logger.debug("Site name: " + siteName);
         
         String instanceName = "ledgerdb";
         if (args.length > 1) {
             instanceName += "-" + args[1];
         }
-        logger.debug("Instance name: " + instanceName);
         
+        logger.info(String.format("Scraper started: site=%s, instance=%s", siteName, instanceName));
+
         try {
             scrape(siteName, instanceName);
         } catch (Exception e) {
