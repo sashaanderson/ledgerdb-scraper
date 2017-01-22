@@ -18,8 +18,6 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
     
-    private boolean loggedIn = false;
-    
     @Override
     public void run() {
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
@@ -142,7 +140,8 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         logOut();
     }
     
-    private void logIn() {
+    @Override
+    protected void logIn() {
         // Online Banking Sign In
         
         driver.findElement(By.xpath("//h1[text()='Online Banking Sign In']"));
@@ -176,7 +175,8 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         this.loggedIn = true;
     }
     
-    private void logOut() {
+    @Override
+    protected void logOut() {
         logger.debug("Logging out...");
         WebElement e1 = driver.findElement(By.xpath("//button[text()='sign out']/.."));
         e1.click();
@@ -184,11 +184,4 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         driver.findElement(By.xpath("//h1[text()='You have signed off']"));
         this.loggedIn = false;
     }
-
-    @Override
-    public void close() throws Exception {
-        if (loggedIn) logOut();
-        super.close();
-    }
-
 }

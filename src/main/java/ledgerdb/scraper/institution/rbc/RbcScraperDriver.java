@@ -18,8 +18,6 @@ public class RbcScraperDriver extends ScraperDriverBase {
     
     private static final Logger logger = LogManager.getLogger();
     
-    private boolean loggedIn = false;
-    
     @Override
     public void run() {
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
@@ -110,7 +108,8 @@ public class RbcScraperDriver extends ScraperDriverBase {
         logger.debug("Accounts Summary - RBC Online Banking");
     }
     
-    private void logIn() {
+    @Override
+    protected void logIn() {
         driver.findElement(By.xpath("//h2[text()='Sign in to Online Banking']"));
         logger.debug("Sign in to Online Banking");
         
@@ -141,7 +140,8 @@ public class RbcScraperDriver extends ScraperDriverBase {
         this.loggedIn = true;
     }
     
-    private void logOut() {
+    @Override
+    protected void logOut() {
         logger.debug("Logging out...");
         
         WebElement button = driver.findElement(By.xpath("//button/span[.='Sign Out']/.."));

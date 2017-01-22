@@ -92,7 +92,8 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         logOut();
     }
     
-    private void logIn() {
+    @Override
+    protected void logIn() {
         WebElement input;
         input = driver.findElement(By.xpath("//input[@id='usernameInput']"));
         for (int i = 1; i <= 5; i++) {
@@ -121,13 +122,16 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         driver.findElement(By.xpath(marker));
         logger.debug("Logged in successfully");
+        super.logIn();
     }
     
-    private void logOut() {
+    @Override
+    protected void logOut() {
         logger.debug("Logging out...");
         WebElement a = driver.findElement(By.xpath("//a[text()='Logout']"));
         a.click();
         driver.findElement(By.xpath("//p/strong[text()='You have successfully logged out!']"));
         logger.debug("Logged out");
+        super.logOut();
     }
 }

@@ -1,5 +1,6 @@
 package ledgerdb.scraper;
 
+import java.util.concurrent.TimeUnit;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +19,8 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     private InstanceInfo instanceInfo;
     protected ServerSession serverSession;
     
+    protected boolean loggedIn = false;
+    
     void setSiteInfo(SiteInfo siteInfo) {
         this.siteInfo = siteInfo;
     }
@@ -27,16 +30,24 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     }
     
     void init() {
-        this.driver = new FirefoxDriver();
-        this.serverSession = new ServerSession(instanceInfo, siteInfo.institution);
+        driver = new FirefoxDriver();
+        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        
+        serverSession = new ServerSession(instanceInfo, siteInfo.institution);
     }
     
+    protected void logIn() { this.loggedIn = true; }
+    protected void logOut() { this.loggedIn = false; }
+    
     @Override
-    public void close() throws Exception {
-        System.out.println();
+    public final void close() throws Exception {
+        System.out.println(); // TODO - move println to ServerSession.close(?)
         logger.info(String.format("%d processed, %d inserted",
                 serverSession.getCountProcessed(),
                 serverSession.getCountInserted()));
+        
+        if (loggedIn)
+            logOut();
         if (driver != null) {
             driver.quit();
             driver = null;
