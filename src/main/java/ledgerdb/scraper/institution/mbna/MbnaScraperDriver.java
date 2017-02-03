@@ -78,11 +78,9 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             s.setDescription(a.get(2).getText());
             
             String amount = a.get(4).getText();
-            checkState(amount.matches("^\\$[\\d,]+(\\.\\d\\d)?$"));
-            //TODO what if refund?
-            amount = amount.replaceAll("[^\\d.]", "");
-            amount = "-" + amount; // negate
-            s.setAmount(new BigDecimal(amount));
+            checkState(amount.matches("^-?\\$[\\d,]+(\\.\\d\\d)?$"));
+            amount = amount.replaceAll("[^-\\d.]", "");
+            s.setAmount(new BigDecimal(amount).negate());
             
             serverSession.merge(s);
 
