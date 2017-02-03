@@ -148,7 +148,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
         button.click();
         
         // You've Successfully Signed Out of Online Banking
-        driver.findElement(By.xpath("//h1[contains(., 'Successfully Signed Out')]"));
+        driver.findElement(By.xpath("//h1[contains(., 'Signed Out')]"));
         
         logger.debug("Logged out");
         this.loggedIn = false;
