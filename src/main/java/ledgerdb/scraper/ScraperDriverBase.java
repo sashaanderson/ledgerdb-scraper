@@ -30,10 +30,10 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
     }
     
     void init() {
+        serverSession = new ServerSession(instanceInfo, siteInfo.institution);
+        
         driver = new FirefoxDriver();
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        
-        serverSession = new ServerSession(instanceInfo, siteInfo.institution);
     }
     
     protected void logIn() { this.loggedIn = true; }
@@ -48,6 +48,7 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         
         if (loggedIn)
             logOut();
+        
         if (driver != null) {
             driver.quit();
             driver = null;

@@ -39,6 +39,9 @@ public class ServerSession {
                         instanceInfo.username,
                         instanceInfo.password);
         client.register(feature);
+        
+        // check if able to connect to server url, ignore response status
+        client.target(instanceInfo.url).request().get();
     }
     
     public int getAccountId(String reference) {
