@@ -27,6 +27,9 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         logIn();
         
+        logger.debug("My Accounts");
+        driver.findElements(By.xpath("//h1[normalize-space(.)='My Accounts']"));
+        
         List<WebElement> a = driver.findElements(By.xpath("//a[@title='Link to Account Snapshot']"));
         checkState(a.size() == 2);
         checkState(a.get(0).isDisplayed() == false);
@@ -45,47 +48,22 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         // Snapshot
         
+        logger.debug("Snapshot");
+        driver.findElements(By.xpath("//h1[normalize-space(.)='Snapshot']"));
         driver.findElement(By.xpath("//h3[@id='recentActivitySummary']"));
-        WebElement e = driver.findElement(By.xpath("//table[@id='transactionTable']"));
+        scrapeTransactionTable(accountId);
         
-        List<WebElement> rows = e.findElements(By.xpath(".//tr"));
-        checkState(rows.size() > 0);
-        logger.debug("Got " + (rows.size() - 1) + " transactions");
+        // Statements
         
-        List<WebElement> head = rows.get(0).findElements(By.xpath(".//th"));
-        checkState(head.size() == 5);
-        checkState(head.get(0).getText().replaceAll("\\s+", " ").startsWith("Transaction date"));
-        checkState(head.get(1).getText().replaceAll("\\s+", " ").startsWith("Posting date"));
-        checkState(head.get(2).getText().startsWith("Description"));
-        checkState(head.get(3).getText().replaceAll("\\s+", " ").startsWith("Reference number"));
-        checkState(head.get(4).getText().startsWith("Amount"));
-
-        for (int i = 1; i < rows.size(); i++) {
-            logger.debug("Parsing transaction " + i + " out of " + (rows.size() - 1));
-            
-            a = rows.get(i).findElements(By.xpath("./td"));
-            checkState(a.size() == 5);
-            
-            StatementDTO s = new StatementDTO();
-            s.setAccountId(accountId);
-            
-            if (a.get(1).getText().isEmpty() && "TEMP".equals(a.get(3).getText())) {
-                logger.debug("Skipped TEMP transaction at row " + i);
-                continue;
-            }
-            s.setDate(a.get(1).getText(), "MM/dd/yyyy");
-            
-            s.setDescription(a.get(2).getText());
-            
-            String amount = a.get(4).getText();
-            checkState(amount.matches("^-?\\$[\\d,]+(\\.\\d\\d)?$"));
-            amount = amount.replaceAll("[^-\\d.]", "");
-            s.setAmount(new BigDecimal(amount).negate());
-            
-            serverSession.merge(s);
-
-            logger.debug("Done merged transaction " + i);
-        }
+        logger.debug("Statements");
+        WebElement e = driver.findElement(By.xpath("//li[@id='tab-statements']"));
+        e.click();
+        driver.findElement(By.xpath("//h1[normalize-space(.)='Statements']"));
+        driver.findElement(By.xpath("//h3[normalize-space(.)='Statement activity']"));
+        e = driver.findElement(By.xpath("//div[normalize-space(./strong)='Statement closing date:']"));
+        e = e.findElement(By.xpath("./following-sibling::div"));
+        logger.debug("Statement closing date: " + e.getText());
+        scrapeTransactionTable(accountId);
         
         logOut();
     }
@@ -131,5 +109,48 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         driver.findElement(By.xpath("//p/strong[text()='You have successfully logged out!']"));
         logger.debug("Logged out");
         super.logOut();
+    }
+    
+    private void scrapeTransactionTable(int accountId) {
+        WebElement e = driver.findElement(By.xpath("//table[@id='transactionTable']"));
+        
+        List<WebElement> rows = e.findElements(By.xpath(".//tr"));
+        checkState(rows.size() > 0);
+        logger.debug("Got " + (rows.size() - 1) + " transactions");
+        
+        List<WebElement> head = rows.get(0).findElements(By.xpath(".//th"));
+        checkState(head.size() == 5);
+        checkState(head.get(0).getText().replaceAll("\\s+", " ").startsWith("Transaction date"));
+        checkState(head.get(1).getText().replaceAll("\\s+", " ").startsWith("Posting date"));
+        checkState(head.get(2).getText().startsWith("Description"));
+        checkState(head.get(3).getText().replaceAll("\\s+", " ").startsWith("Reference number"));
+        checkState(head.get(4).getText().startsWith("Amount"));
+
+        for (int i = 1; i < rows.size(); i++) {
+            logger.debug("Parsing transaction " + i + " out of " + (rows.size() - 1));
+            
+            List<WebElement> a = rows.get(i).findElements(By.xpath("./td"));
+            checkState(a.size() == 5);
+            
+            StatementDTO s = new StatementDTO();
+            s.setAccountId(accountId);
+            
+            if (a.get(1).getText().isEmpty() && "TEMP".equals(a.get(3).getText())) {
+                logger.debug("Skipped TEMP transaction at row " + i);
+                continue;
+            }
+            s.setDate(a.get(1).getText(), "MM/dd/yyyy");
+            
+            s.setDescription(a.get(2).getText().trim());
+            
+            String amount = a.get(4).getText();
+            checkState(amount.matches("^-?\\$[\\d,]+(\\.\\d\\d)?$"));
+            amount = amount.replaceAll("[^-\\d.]", "");
+            s.setAmount(new BigDecimal(amount).negate());
+            
+            serverSession.merge(s);
+
+            logger.debug("Done merged transaction " + i);
+        }
     }
 }
