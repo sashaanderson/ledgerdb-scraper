@@ -64,7 +64,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
     
     private void processTable(WebElement table, int accountId) {
         List<WebElement> rows = table.findElements(By.xpath(".//tr"));
-        checkState(rows.size() >= 2);
+        checkState(rows.size() >= 1);
         
         WebElement row = rows.get(0);
         List<WebElement> cells = row.findElements(By.xpath("./child::th"));
