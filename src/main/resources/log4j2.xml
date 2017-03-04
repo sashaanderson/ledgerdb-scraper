@@ -9,7 +9,7 @@
 
     <RollingFile name="FILE1"
         fileName="log/ledgerdb-scraper.log"
-        filePattern="log/ledgerdb-scraper.log.%d{MM-dd-yyyy}">
+        filePattern="log/ledgerdb-scraper.log.%d{yyyy-MM-dd}">
       <PatternLayout pattern="%d [%t] %-5level %logger{-2} - %msg%n%throwable"/>
       <Policies>
         <TimeBasedTriggeringPolicy />
@@ -19,7 +19,7 @@
 
     <RollingFile name="FILE2"
         fileName="log/debug/debug.log"
-        filePattern="log/debug/debug.log.%d{MM-dd-yyyy}">
+        filePattern="log/debug/debug.log.%d{yyyy-MM-dd}">
       <PatternLayout pattern="%d [%t] %-5level %logger{-2} - %msg%n%throwable"/>
       <Policies>
         <TimeBasedTriggeringPolicy />
