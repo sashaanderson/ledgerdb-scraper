@@ -27,13 +27,32 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         
         logIn();
         
+        scrapeTable("DEPOSIT");
+        scrapeTable("NON_REGISTERED_INVESTMENT");
+        scrapeTable("REGISTERED_INVESTMENT");
+        scrapeTable("CREDIT");
+        
+        logOut();
+    }
+    
+    private void scrapeTable(String className) {
         WebElement e1, e2;
         
-        // Deposit Accounts
-        e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
+        e1 = driver.findElement(By.xpath("//a[text()='Account Summary']"));
+        e1.click();
+        
+        logger.debug("Scraping table " + className);
+        e1 = driver.findElement(By.xpath("//table[@class='" + className + "']"));
         List<WebElement> accountList = e1.findElements(By.xpath("tbody/tr"));
+        
+        if (accountList.size() == 1
+                && accountList.get(0).getText().contains("You don't have any")) {
+            logger.debug("You don't have any");
+            return;
+        }
+        
         checkState(accountList.size() > 0);
-        logger.debug("Got " + accountList.size() + " deposit accounts");
+        logger.debug("Got " + accountList.size() + " accounts in " + className);
         
         for (int i = 0; i < accountList.size(); i++) {
             logger.debug("Processing account " + (i + 1) + " out of " + accountList.size());
@@ -43,7 +62,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 //Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS); //XXX
                 e1.click();
 
-                e1 = driver.findElement(By.xpath("//table[@class='DEPOSIT']"));
+                e1 = driver.findElement(By.xpath("//table[@class='" + className + "']"));
                 accountList = e1.findElements(By.xpath("tbody/tr"));
             }
             if (i >= accountList.size()) break;
@@ -88,7 +107,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             List<WebElement> trList = e1.findElements(By.xpath(".//tr"));
             checkState(trList.size() > 0);
             checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
-            logger.debug("Got " + trList.size() + " transactions");
+            logger.debug("Got " + (trList.size() - 1) + " transactions");
 
             for (int j = 1; j < trList.size(); j++) {
                 WebElement tr = trList.get(j);
@@ -136,8 +155,6 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 logger.debug("Done merged transaction " + j);
             } // for
         } // for
-
-        logOut();
     }
     
     @Override
