@@ -27,15 +27,17 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         logIn();
         
-        logger.debug("My Accounts");
-        driver.findElements(By.xpath("//h1[normalize-space(.)='My Accounts']"));
-        
         List<WebElement> a = driver.findElements(By.xpath("//a[@title='Link to Account Snapshot']"));
-        checkState(a.size() == 2);
-        checkState(a.get(0).isDisplayed() == false);
-        checkState(a.get(1).isDisplayed() == true);
+        WebElement link = null;
+        for (int i = 0; i < a.size(); i++) {
+            if (a.get(i).isDisplayed()) {
+                link = a.get(i);
+                break;
+            }
+        }
+        checkState(link != null);
         
-        String reference = a.get(1).getText();
+        String reference = link.getText();
         Pattern pattern = Pattern.compile("ending in (\\d+)");
         Matcher matcher = pattern.matcher(reference);
         checkState(matcher.find());
@@ -44,7 +46,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         int accountId = serverSession.getAccountId(reference);
         
-        a.get(1).click();
+        link.click();
         
         // Snapshot
         
@@ -74,7 +76,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         input = driver.findElement(By.xpath("//input[@id='usernameInput']"));
         for (int i = 1; i <= 5; i++) {
             if (input.isDisplayed()) break;
-            SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
+            driver.navigate().refresh(); // XXX
             input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
         }
         input.sendKeys(siteInfo.logon);
@@ -87,7 +89,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         input.click();
         logger.debug("Logging in...");
         
-        String marker = "//div[@id='myAccounts-heading']";
+        String marker = "//h1[normalize-space(.)='My Accounts']";
         driver.findElements(By.xpath(marker));
         
         List<WebElement> a = driver.findElements(By.xpath("//div[@id='errorMessage']"));
@@ -97,6 +99,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         }
         
         driver.findElement(By.xpath(marker));
+        
         logger.debug("Logged in successfully");
         super.logIn();
     }
