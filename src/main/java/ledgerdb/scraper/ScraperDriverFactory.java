@@ -8,7 +8,8 @@ public class ScraperDriverFactory {
     public static ScraperDriverBase create(SiteInfo siteInfo, InstanceInfo instanceInfo)
             throws IOException,
                 InstantiationException,
-                IllegalAccessException {
+                IllegalAccessException,
+                ClassNotFoundException {
         
         String packageName = ScraperDriverFactory.class.getPackage().getName()
                 + ".institution."

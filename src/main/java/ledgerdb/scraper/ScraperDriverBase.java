@@ -9,6 +9,8 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
 
+    private static final String DEFAULT_SELENIUM_DRIVER = "firefox.FirefoxDriver";
+    
     private static final Logger logger = LogManager.getLogger();
     
     protected static final Sleeper SLEEPER = new Sleeper();
@@ -29,10 +31,22 @@ public abstract class ScraperDriverBase implements Runnable, AutoCloseable {
         this.instanceInfo = instanceInfo;
     }
     
-    void init() {
+    void init() throws ClassNotFoundException,
+            InstantiationException,
+            IllegalAccessException {
+        
         serverSession = new ServerSession(instanceInfo, siteInfo.institution);
         
-        driver = new FirefoxDriver();
+        String driverClassName = System.getProperty("selenium.driver", "firefox.FirefoxDriver");
+        Class driverClass;
+        try {
+            driverClass = Class.forName("org.openqa.selenium." + driverClassName);
+        } catch (ClassNotFoundException e) {
+            driverClass = Class.forName(driverClassName);
+        }
+        
+        logger.debug("Instantiating web driver class: " + driverClass.getName());
+        driver = (RemoteWebDriver)driverClass.newInstance();
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
     }
     

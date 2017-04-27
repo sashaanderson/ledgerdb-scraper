@@ -2,14 +2,15 @@ package ledgerdb.scraper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openqa.selenium.io.IOUtils;
 
 public class KPScript {
 
@@ -55,7 +56,7 @@ public class KPScript {
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted", e);
         }
-        String output = IOUtils.readFully(p.getInputStream());
+        String output = IOUtils.toString(p.getInputStream(), Charset.defaultCharset());
         if (p.exitValue() != 0) {
             logger.error(output);
             throw new RuntimeException("KPScript failed, exit value " + p.exitValue());
