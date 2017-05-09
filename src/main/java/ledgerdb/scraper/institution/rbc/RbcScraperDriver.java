@@ -6,17 +6,36 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.ServerSession;
+import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
+import ledgerdb.scraper.util.Sleeper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 public class RbcScraperDriver extends ScraperDriverBase {
     
     private static final Logger logger = LogManager.getLogger();
+    
+    private final RemoteWebDriver driver;
+    private final SiteInfo siteInfo;
+    private final ServerSession serverSession;
+    
+    @Inject
+    public RbcScraperDriver(
+            RemoteWebDriver driver,
+            SiteInfo siteInfo,
+            ServerSession serverSession) {
+        this.driver = driver;
+        this.siteInfo = siteInfo;
+        this.serverSession = serverSession;
+    }
     
     @Override
     public void run() {
@@ -51,7 +70,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             ref = ref.replaceAll("[^0-9]", "");
             checkState(ref.matches("^[0-9]+$"));
             
-            int accountId = serverSession.getAccountId(ref);
+            int accountId = serverSession.getAccountId(siteInfo.institution, ref);
             
             link.click();
             
@@ -59,7 +78,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             //link = driver.findElement(By.xpath("//a[@title='Display last 30 days']"));
             //link.click();
 
-            SLEEPER.sleepBetween(5, 10, TimeUnit.SECONDS); // wait for page to load
+            Sleeper.sleepBetween(5, 10, TimeUnit.SECONDS); // wait for page to load
             e = driver.findElement(By.xpath("//section[@id='pdaTransactionsTable']"));
             checkState("Bank Account Details - RBC Online Banking".equals(driver.getTitle()));
             checkState(1 == e.findElements(By.xpath(".//table")).size());

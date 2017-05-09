@@ -6,16 +6,35 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.ServerSession;
+import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
+import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 public class MbnaScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
+    
+    private final RemoteWebDriver driver;
+    private final SiteInfo siteInfo;
+    private final ServerSession serverSession;
+    
+    @Inject
+    public MbnaScraperDriver(
+            RemoteWebDriver driver,
+            SiteInfo siteInfo,
+            ServerSession serverSession) {
+        this.driver = driver;
+        this.siteInfo = siteInfo;
+        this.serverSession = serverSession;
+    }
     
     @Override
     public void run() {
@@ -23,7 +42,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         
         logger.debug("Connecting to " + siteInfo.url);
         driver.get(siteInfo.url);
-        SLEEPER.sleepBetween(4, 7, TimeUnit.SECONDS);
+        Sleeper.sleepBetween(4, 7, TimeUnit.SECONDS);
         
         logIn();
         
@@ -44,7 +63,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         reference = matcher.group(1);
         logger.debug("Reference: " + reference);
         
-        int accountId = serverSession.getAccountId(reference);
+        int accountId = serverSession.getAccountId(siteInfo.institution, reference);
         
         link.click();
         
@@ -80,15 +99,20 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
         }
         input.sendKeys(siteInfo.logon);
-        SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
+        Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
         input.sendKeys(siteInfo.password);
-        SLEEPER.sleepBetween(1, 2, TimeUnit.SECONDS);
+        Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
         
         input = driver.findElement(By.xpath("//input[@id='login' and @value='Login' and @type='submit']"));
         input.click();
         logger.debug("Logging in...");
         
+        // //p/strong[normalize-space(.)='Identity not recognized']
+        // //p starts-with "Please enter the answer to your challenge question"
+        // <label id="MFAChallengeForm:question" for="MFAChallengeForm:answer">
+        // What is your favourite bakery?</label>
+        // <input id="MFAChallengeForm:answer" type="password" ...
         String marker = "//h1[normalize-space(.)='My Accounts']";
         driver.findElements(By.xpath(marker));
         

@@ -4,19 +4,38 @@ import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.ServerSession;
+import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
+import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.Select;
 
 public class PcfinancialScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
+    
+    private final RemoteWebDriver driver;
+    private final SiteInfo siteInfo;
+    private final ServerSession serverSession;
+    
+    @Inject
+    public PcfinancialScraperDriver(
+            RemoteWebDriver driver,
+            SiteInfo siteInfo,
+            ServerSession serverSession) {
+        this.driver = driver;
+        this.siteInfo = siteInfo;
+        this.serverSession = serverSession;
+    }
     
     @Override
     public void run() {
@@ -68,7 +87,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             if (i >= accountList.size()) break;
         
             e2 = accountList.get(i).findElement(By.xpath(".//a"));
-            SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
+            Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
             e2.click();
             // LOADING
 
@@ -100,7 +119,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 continue;
             }
             
-            int accountId = serverSession.getAccountId(reference);
+            int accountId = serverSession.getAccountId(siteInfo.institution, reference);
 
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
@@ -174,7 +193,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         e1 = driver.findElement(By.xpath("//label[contains(.,'Password:')]"));
         e2 = e1.findElement(By.xpath("following::input"));
         e2.sendKeys(siteInfo.password);
-        SLEEPER.sleepBetween(2, 5, TimeUnit.SECONDS);
+        Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
         e2.sendKeys(Keys.ENTER);
         logger.debug("Logging in...");
         // LOADING...

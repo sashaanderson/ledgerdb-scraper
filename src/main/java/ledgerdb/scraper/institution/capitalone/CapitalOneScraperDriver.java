@@ -5,17 +5,35 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
+import ledgerdb.scraper.ServerSession;
+import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.Select;
 
 public class CapitalOneScraperDriver extends ScraperDriverBase {
 
     private static final Logger logger = LogManager.getLogger();
+    
+    private final RemoteWebDriver driver;
+    private final SiteInfo siteInfo;
+    private final ServerSession serverSession;
+    
+    @Inject
+    public CapitalOneScraperDriver(
+            RemoteWebDriver driver,
+            SiteInfo siteInfo,
+            ServerSession serverSession) {
+        this.driver = driver;
+        this.siteInfo = siteInfo;
+        this.serverSession = serverSession;
+    }
     
     @Override
     public void run() {
@@ -32,7 +50,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
         ref = matcher.group(1);
         checkState(ref.matches("^[0-9]+$"));
 
-        int accountId = serverSession.getAccountId(ref);
+        int accountId = serverSession.getAccountId(siteInfo.institution, ref);
         
         // Recent Transactions
         

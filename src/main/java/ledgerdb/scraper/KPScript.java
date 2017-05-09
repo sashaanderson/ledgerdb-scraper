@@ -14,25 +14,29 @@ import org.apache.logging.log4j.Logger;
 
 public class KPScript {
 
-    public static final String DEFAULT_KDBX_FILE = "ledgerdb-scraper.kdbx";
-    public static final String DEFAULT_KDBX_PW = "@ledgerdb-scraper.pw";
-    
     private static final String EOL = System.lineSeparator();
     
     private static final Logger logger = LogManager.getLogger();
     
-    private KPScript() {}
+    public static final String DEFAULT_KDBX_FILE = "ledgerdb-scraper.kdbx";
+    public static final String DEFAULT_KDBX_PW = "@ledgerdb-scraper.pw";
     
-    public static String getEntry(String title, String field) throws IOException {
-        String file = System.getProperty("kdbx.file", DEFAULT_KDBX_FILE);
+    private final String file;
+    private final String pw;
+    
+    public KPScript(String file, String pw) throws FileNotFoundException, IOException {
         if (!Files.exists(Paths.get(file)))
             throw new FileNotFoundException(file);
+        this.file = file;
         
-        String pw = System.getProperty("kdbx.pw", DEFAULT_KDBX_PW);
         if (pw != null && pw.startsWith("@")) {
-            pw = Files.readAllLines(Paths.get(pw.substring(1))).get(0);
+            this.pw = Files.readAllLines(Paths.get(pw.substring(1))).get(0);
+        } else {
+            this.pw = pw;
         }
-        
+    }
+    
+    public String getEntry(String title, String field) throws IOException {
         ArrayList<String> args = new ArrayList<>();
         args.add("KPScript");
         args.add("-c:GetEntryString");

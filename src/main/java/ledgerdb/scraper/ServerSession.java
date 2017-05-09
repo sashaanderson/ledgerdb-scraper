@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -16,12 +18,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 
-public class ServerSession {
+@Singleton
+public class ServerSession implements AutoCloseable {
     
     private static final Logger logger = LogManager.getLogger();
 
     private final InstanceInfo instanceInfo;
-    private final String institution;
     
     private final Client client;
     
@@ -29,9 +31,9 @@ public class ServerSession {
     
     private int countProcessed = 0, countInserted = 0;
     
-    public ServerSession(InstanceInfo instanceInfo, String institution) {
+    @Inject
+    public ServerSession(InstanceInfo instanceInfo) {
         this.instanceInfo = instanceInfo;
-        this.institution = institution;
         
         client = ClientBuilder.newClient();
         HttpAuthenticationFeature feature
@@ -44,7 +46,7 @@ public class ServerSession {
         client.target(instanceInfo.url).request().get();
     }
     
-    public int getAccountId(String reference) {
+    public int getAccountId(String institution, String reference) {
         WebTarget target = client.target(instanceInfo.url)
                 .path("institution_link")
                 .path(institution)
@@ -106,4 +108,10 @@ public class ServerSession {
     
     public int getCountProcessed() { return countProcessed; }
     public int getCountInserted() { return countInserted; }
+
+    @Override
+    public void close() throws Exception {
+        System.out.println();
+        logger.info(String.format("%d processed, %d inserted",
+                countProcessed, countInserted));    }
 }
