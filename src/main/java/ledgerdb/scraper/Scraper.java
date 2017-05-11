@@ -31,6 +31,7 @@ public class Scraper {
     public static final String OPTION_KDBX_PW = "kdbx-pw";
     public static final String OPTION_SELENIUM_DRIVER = "selenium-driver";
     public static final String OPTION_LIST = "list";
+    public static final String OPTION_KEEP = "keep";
 
     private static final String DEFAULT_INSTANCE_NAME = "ledgerdb";
     private static final String DEFAULT_KDBX_FILE = "./ledgerdb-scraper.kdbx";
@@ -81,7 +82,12 @@ public class Scraper {
         
         options.addOption(Option.builder("l")
                 .longOpt(OPTION_LIST)
-                .desc("List available sites and instances from KBDX file.")
+                .desc("List sites and instances from KBDX file.")
+                .build());
+        
+        options.addOption(Option.builder()
+                .longOpt(OPTION_KEEP)
+                .desc("Keep browser window open, do not log out.")
                 .build());
     }
 
@@ -180,10 +186,18 @@ public class Scraper {
             }
         });
         
-        try (ServerSession serverSession = injector.getInstance(ServerSession.class);
-                ScraperDriverBase driver = injector.getInstance(ScraperDriverBase.class)) {
+        ServerSession serverSession = injector.getInstance(ServerSession.class);
+        RemoteWebDriver driver = injector.getInstance(RemoteWebDriver.class);
+        ScraperDriverBase scraperDriver = injector.getInstance(ScraperDriverBase.class);
+        try {
             logger.debug("Running driver for institution: " + siteInfo.institution);
-            driver.run();
+            scraperDriver.run();
+        } finally {
+            serverSession.close();
+            if (!commandLine.hasOption(OPTION_KEEP)) {
+                scraperDriver.close(); // log out
+                driver.quit();
+            }
         }
         logger.info("Scraper completed successfully" + System.lineSeparator());
     }
