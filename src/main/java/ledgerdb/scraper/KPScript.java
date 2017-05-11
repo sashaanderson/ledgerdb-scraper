@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -37,22 +38,43 @@ public class KPScript {
     }
     
     public String getEntry(String title, String field) throws IOException {
-        ArrayList<String> args = new ArrayList<>();
-        args.add("KPScript");
-        args.add("-c:GetEntryString");
-        args.add(file);
-        args.add("-pw:" + pw);
-        args.add("-ref-Title:" + title);
-        args.add("-FailIfNoEntry");
-        args.add("-Field:" + field);
-        logger.debug(args
+        return call("GetEntryString",
+                "-ref-Title:" + title,
+                "-FailIfNoEntry",
+                "-Field:" + field);
+    }
+    
+    public void listEntries() throws IOException {
+        String output = call("ListEntries");
+        String[] blocks = output.split(EOL + EOL);
+        for (String block : blocks) {
+            String[] lines = block.split(EOL);
+            if (Arrays.stream(lines)
+                    .anyMatch(line -> line.equals("GRPN: Recycle Bin")))
+                continue;
+            Arrays.stream(lines)
+                    .filter(line -> line.startsWith("S: "))
+                    .map(line -> line.replaceFirst("^(S: Password =) .*", "$1 ********"))
+                    .forEach(System.out::println);
+            System.out.println();
+        }
+    }
+    
+    public String call(String command, String... args) throws IOException {
+        ArrayList<String> list = new ArrayList<>();
+        list.add("KPScript");
+        list.add("-c:" + command);
+        list.add(file);
+        list.add("-pw:" + pw);
+        Collections.addAll(list, args);
+        logger.debug(list
                 .stream()
                 .map(arg -> arg.startsWith("-pw:")
                         ? "-pw:******"
                         : arg)
                 .collect(Collectors.joining(" ")));
         
-        Process p = new ProcessBuilder(args)
+        Process p = new ProcessBuilder(list)
                 .redirectErrorStream(true)
                 .start();
         try {

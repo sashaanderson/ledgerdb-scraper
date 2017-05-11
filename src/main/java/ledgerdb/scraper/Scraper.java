@@ -30,6 +30,7 @@ public class Scraper {
     public static final String OPTION_KDBX_FILE = "kdbx-file";
     public static final String OPTION_KDBX_PW = "kdbx-pw";
     public static final String OPTION_SELENIUM_DRIVER = "selenium-driver";
+    public static final String OPTION_LIST = "list";
 
     private static final String DEFAULT_INSTANCE_NAME = "ledgerdb";
     private static final String DEFAULT_KDBX_FILE = "./ledgerdb-scraper.kdbx";
@@ -44,7 +45,7 @@ public class Scraper {
                 .hasArg()
                 .argName("SITE")
                 .desc("Site name. (Required)")
-                .required()
+                //.required()
                 .build());
         options.addOption(Option.builder("i")
                 .longOpt(OPTION_INSTANCE_NAME)
@@ -66,14 +67,22 @@ public class Scraper {
                 .desc("Password for KDBX file.\n(Default: " + DEFAULT_KDBX_PW + ")")
                 // If the option begins with @ sign followed by the file name or path, password will be read from the specified file.
                 .build());
-        options.addOption(Option.builder()
+        options.addOption(Option.builder("w")
                 .longOpt(OPTION_SELENIUM_DRIVER)
                 .hasArg()
                 .argName("DRIVER")
                 .desc("Selenium driver name.\n(Default: " + DEFAULT_SELENIUM_DRIVER + ")")
                 // Prefix "org.openqa.selenium." may be omitted for brevity.
                 .build());
-        options.addOption(Option.builder("h").longOpt("help").build());
+        options.addOption(Option.builder("h")
+                .longOpt("help")
+                .desc("Print this help.")
+                .build());
+        
+        options.addOption(Option.builder("l")
+                .longOpt(OPTION_LIST)
+                .desc("List available sites and instances from KBDX file.")
+                .build());
     }
 
     private final CommandLine commandLine;
@@ -81,19 +90,25 @@ public class Scraper {
     private final String siteName;
     private final String instanceName;
 
-    public Scraper(String... args) {
+    public Scraper(String... args) throws IOException {
         try {
             CommandLineParser parser = new DefaultParser();
             commandLine = parser.parse(options, args);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
             usage();
-            throw new IllegalStateException(); // should not happen, usage exits
+            throw new Error(); // should not happen, usage exits
         }
         if (commandLine.hasOption('h'))
             usage();
         
         siteName = commandLine.getOptionValue(OPTION_SITE_NAME);
+        if (siteName == null) {
+            if (commandLine.hasOption(OPTION_LIST))
+                list();
+            else
+                usage("Missing required option: " + OPTION_SITE_NAME);
+        }
 
         if (commandLine.hasOption(OPTION_INSTANCE_NAME))
             instanceName = DEFAULT_INSTANCE_NAME + "-"
@@ -102,23 +117,26 @@ public class Scraper {
             instanceName = DEFAULT_INSTANCE_NAME;
     }
 
+    private void usage(String message) {
+        System.err.println(message);
+        usage();
+    }
+    
     private void usage() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("java ledgerdb.scraper.Scraper -s SITE [OPTIONS]", options);
         System.exit(2);
     }
-
-    public static void main(String... args) throws Exception {
-        try {
-            Scraper scraper = new Scraper(args);
-            scraper.run();
-        } catch (Exception e) {
-            logger.fatal("Exception occurred: " + e.getMessage(), e);
-            throw e;
-        }
+    
+    private void list() throws IOException {
+        KPScript kpscript = new KPScript(
+                commandLine.getOptionValue(OPTION_KDBX_FILE, DEFAULT_KDBX_FILE),
+                commandLine.getOptionValue(OPTION_KDBX_PW, DEFAULT_KDBX_PW));
+        kpscript.listEntries();
+        System.exit(0);
     }
 
-    private void run() throws Exception {
+    private void scrape() throws Exception {
         logger.info(String.format("Scraper started: site=%s, instance=%s", siteName, instanceName));
 
         KPScript kpscript = new KPScript(
@@ -195,4 +213,13 @@ public class Scraper {
         
     } // class ScraperModule
     
+    public static void main(String... args) throws Exception {
+        try {
+            Scraper scraper = new Scraper(args);
+            scraper.scrape();
+        } catch (Exception e) {
+            logger.fatal("Exception occurred: " + e.getMessage(), e);
+            throw e;
+        }
+    }
 }
