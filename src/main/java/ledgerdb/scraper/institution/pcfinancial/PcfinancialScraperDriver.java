@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
 import ledgerdb.scraper.ServerSession;
-import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.Level;
@@ -21,37 +20,27 @@ import org.openqa.selenium.support.ui.Select;
 
 public class PcfinancialScraperDriver extends ScraperDriverBase {
 
+    private static final String INSTITUTION = "pcfinancial";
+    
     private static final Logger logger = LogManager.getLogger();
     
     private final RemoteWebDriver driver;
-    private final SiteInfo siteInfo;
     private final ServerSession serverSession;
     
     @Inject
     public PcfinancialScraperDriver(
             RemoteWebDriver driver,
-            SiteInfo siteInfo,
             ServerSession serverSession) {
         this.driver = driver;
-        this.siteInfo = siteInfo;
         this.serverSession = serverSession;
     }
     
     @Override
-    public void run() {
-        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        
-        logger.debug("Connecting to " + siteInfo.url);
-        driver.get(siteInfo.url);        
-        
-        logIn();
-        
+    public void scrape() {
         scrapeTable("DEPOSIT");
         scrapeTable("NON_REGISTERED_INVESTMENT");
         scrapeTable("REGISTERED_INVESTMENT");
         scrapeTable("CREDIT");
-        
-        logOut();
     }
     
     private void scrapeTable(String className) {
@@ -119,7 +108,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
                 continue;
             }
             
-            int accountId = serverSession.getAccountId(siteInfo.institution, reference);
+            int accountId = serverSession.getAccountId(INSTITUTION, reference);
 
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
@@ -177,7 +166,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
     }
     
     @Override
-    protected void logIn() {
+    protected void logIn(String logon, String password) {
         // Online Banking Sign In
         
         driver.findElement(By.xpath("//h1[text()='Online Banking Sign In']"));
@@ -188,11 +177,11 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         checkState("Card Number:".equals(e1.getText()));
         
         e2 = e1.findElement(By.xpath("following::input"));
-        e2.sendKeys(siteInfo.logon);
+        e2.sendKeys(logon);
         
         e1 = driver.findElement(By.xpath("//label[contains(.,'Password:')]"));
         e2 = e1.findElement(By.xpath("following::input"));
-        e2.sendKeys(siteInfo.password);
+        e2.sendKeys(password);
         Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
         e2.sendKeys(Keys.ENTER);
         logger.debug("Logging in...");

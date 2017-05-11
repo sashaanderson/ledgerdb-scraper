@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -31,7 +30,6 @@ public class ServerSession implements AutoCloseable {
     
     private int countProcessed = 0, countInserted = 0;
     
-    @Inject
     public ServerSession(InstanceInfo instanceInfo) {
         this.instanceInfo = instanceInfo;
         

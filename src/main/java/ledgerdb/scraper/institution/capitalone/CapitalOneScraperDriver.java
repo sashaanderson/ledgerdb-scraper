@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
 import ledgerdb.scraper.ServerSession;
-import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,29 +18,23 @@ import org.openqa.selenium.support.ui.Select;
 
 public class CapitalOneScraperDriver extends ScraperDriverBase {
 
+    private static final String INSTITUTION = "capitalone";
+    
     private static final Logger logger = LogManager.getLogger();
     
     private final RemoteWebDriver driver;
-    private final SiteInfo siteInfo;
     private final ServerSession serverSession;
     
     @Inject
     public CapitalOneScraperDriver(
             RemoteWebDriver driver,
-            SiteInfo siteInfo,
             ServerSession serverSession) {
         this.driver = driver;
-        this.siteInfo = siteInfo;
         this.serverSession = serverSession;
     }
     
     @Override
-    public void run() {
-        logger.debug("Connecting to " + siteInfo.url);
-        driver.get(siteInfo.url);
-        
-        logIn();
-        
+    public void scrape() {
         WebElement e = driver.findElement(By.xpath("//div[@id='user_info']"));
         String ref = e.getText();
         Pattern pattern = Pattern.compile("Account Ending In: (\\d+)");
@@ -50,7 +43,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
         ref = matcher.group(1);
         checkState(ref.matches("^[0-9]+$"));
 
-        int accountId = serverSession.getAccountId(siteInfo.institution, ref);
+        int accountId = serverSession.getAccountId(INSTITUTION, ref);
         
         // Recent Transactions
         
@@ -76,8 +69,6 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
         table = driver.findElement(By.xpath("//table[caption='STATEMENT SUMMARY']"));
         table = driver.findElement(By.xpath("//table[caption='TRANSACTION SUMMARY']"));
         processTable(table, accountId);
-
-        logOut();
     }
     
     private void processTable(WebElement table, int accountId) {
@@ -119,7 +110,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
     }
     
     @Override
-    protected void logIn() {
+    protected void logIn(String logon, String password) {
         driver.findElement(By.xpath("//h1[.='Please Login']"));
         logger.debug("Please Login");
         
@@ -129,12 +120,12 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
         input = driver.findElement(By.xpath("//label[.='Login ID']"));
         id = input.getAttribute("for");
         input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
-        input.sendKeys(siteInfo.logon);
+        input.sendKeys(logon);
         
         input = driver.findElement(By.xpath("//label[.='Password']"));
         id = input.getAttribute("for");
         input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
-        input.sendKeys(siteInfo.password);
+        input.sendKeys(password);
         
         input = driver.findElement(By.xpath("//input[@type='button' and @value='Login']"));
         input.click();

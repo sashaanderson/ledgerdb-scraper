@@ -176,22 +176,26 @@ public class Scraper {
                     .get();
         }
         
+        ServerSession serverSession = new ServerSession(instanceInfo);
+        
         Injector injector = Guice.createInjector(new ScraperModule() {
             @Override
             protected void configure() {
-                bind(SiteInfo.class).toInstance(siteInfo);
-                bind(InstanceInfo.class).toInstance(instanceInfo);
-                
                 bind(ScraperDriverBase.class).to(scraperDriverClass);
+                bind(ServerSession.class).toInstance(serverSession);
             }
         });
         
-        ServerSession serverSession = injector.getInstance(ServerSession.class);
         RemoteWebDriver driver = injector.getInstance(RemoteWebDriver.class);
         ScraperDriverBase scraperDriver = injector.getInstance(ScraperDriverBase.class);
         try {
             logger.debug("Running driver for institution: " + siteInfo.institution);
-            scraperDriver.run();
+            
+            logger.debug("Connecting to " + siteInfo.url);
+            driver.get(siteInfo.url); 
+            
+            scraperDriver.logIn(siteInfo.logon, siteInfo.password);
+            scraperDriver.scrape();
         } finally {
             serverSession.close();
             if (!commandLine.hasOption(OPTION_KEEP)) {

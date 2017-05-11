@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
 import ledgerdb.scraper.ServerSession;
-import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.commons.lang3.StringUtils;
@@ -21,31 +20,23 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 public class RbcScraperDriver extends ScraperDriverBase {
     
+    private static final String INSTITUTION = "rbc";
+    
     private static final Logger logger = LogManager.getLogger();
     
     private final RemoteWebDriver driver;
-    private final SiteInfo siteInfo;
     private final ServerSession serverSession;
     
     @Inject
     public RbcScraperDriver(
             RemoteWebDriver driver,
-            SiteInfo siteInfo,
             ServerSession serverSession) {
         this.driver = driver;
-        this.siteInfo = siteInfo;
         this.serverSession = serverSession;
     }
     
     @Override
-    public void run() {
-        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        
-        logger.debug("Connecting to " + siteInfo.url);
-        driver.get(siteInfo.url);
-        
-        logIn();
-        
+    public void scrape() {
         for (int i = 0; ; i++) {
             WebElement e = driver.findElement(By.xpath("//section[@id='bankAcc']"));
             checkState("Bank Accounts".equals(e.findElement(By.xpath("./div/h3")).getText()));
@@ -70,7 +61,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             ref = ref.replaceAll("[^0-9]", "");
             checkState(ref.matches("^[0-9]+$"));
             
-            int accountId = serverSession.getAccountId(siteInfo.institution, ref);
+            int accountId = serverSession.getAccountId(INSTITUTION, ref);
             
             link.click();
             
@@ -117,8 +108,6 @@ public class RbcScraperDriver extends ScraperDriverBase {
             link.click();
             checkStateAccountSummary();
         }
-        
-        logOut();
     }
     
     private void checkStateAccountSummary() {
@@ -128,7 +117,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
     }
     
     @Override
-    protected void logIn() {
+    protected void logIn(String logon, String password) {
         driver.findElement(By.xpath("//h2[text()='Sign in to Online Banking']"));
         logger.debug("Sign in to Online Banking");
         
@@ -139,14 +128,14 @@ public class RbcScraperDriver extends ScraperDriverBase {
         checkState(id.matches("^\\w+$"));
         input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
         checkState("text".equals(input.getAttribute("type")));
-        input.sendKeys(siteInfo.logon);
+        input.sendKeys(logon);
         
         input = driver.findElement(By.xpath("//label[starts-with(text(),'Password')]"));
         id = input.getAttribute("for");
         checkState(id.matches("^\\w+$"));
         input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
         checkState("password".equals(input.getAttribute("type")));
-        input.sendKeys(siteInfo.password);
+        input.sendKeys(password);
         
         input = driver.findElement(By.xpath("//button[text()='Sign In']"));
         checkState("submit".equals(input.getAttribute("type")));

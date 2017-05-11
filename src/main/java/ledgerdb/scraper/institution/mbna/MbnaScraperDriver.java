@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
 import ledgerdb.scraper.ServerSession;
-import ledgerdb.scraper.SiteInfo;
 import ledgerdb.scraper.dto.StatementDTO;
 import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
@@ -20,32 +19,23 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 public class MbnaScraperDriver extends ScraperDriverBase {
 
+    private static final String INSTITUTION = "mbna";
+    
     private static final Logger logger = LogManager.getLogger();
     
     private final RemoteWebDriver driver;
-    private final SiteInfo siteInfo;
     private final ServerSession serverSession;
     
     @Inject
     public MbnaScraperDriver(
             RemoteWebDriver driver,
-            SiteInfo siteInfo,
             ServerSession serverSession) {
         this.driver = driver;
-        this.siteInfo = siteInfo;
         this.serverSession = serverSession;
     }
     
     @Override
-    public void run() {
-        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        
-        logger.debug("Connecting to " + siteInfo.url);
-        driver.get(siteInfo.url);
-        Sleeper.sleepBetween(4, 7, TimeUnit.SECONDS);
-        
-        logIn();
-        
+    public void scrape() {
         List<WebElement> a = driver.findElements(By.xpath("//a[@title='Link to Account Snapshot']"));
         WebElement link = null;
         for (int i = 0; i < a.size(); i++) {
@@ -63,7 +53,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         reference = matcher.group(1);
         logger.debug("Reference: " + reference);
         
-        int accountId = serverSession.getAccountId(siteInfo.institution, reference);
+        int accountId = serverSession.getAccountId(INSTITUTION, reference);
         
         link.click();
         
@@ -90,7 +80,9 @@ public class MbnaScraperDriver extends ScraperDriverBase {
     }
     
     @Override
-    protected void logIn() {
+    protected void logIn(String logon, String password) {
+        Sleeper.sleepBetween(4, 7, TimeUnit.SECONDS);
+        
         WebElement input;
         input = driver.findElement(By.xpath("//input[@id='usernameInput']"));
         for (int i = 1; i <= 5; i++) {
@@ -98,10 +90,10 @@ public class MbnaScraperDriver extends ScraperDriverBase {
             driver.navigate().refresh(); // XXX
             input = driver.findElement(By.xpath("//input[@id='usernameInput']")); //XXX
         }
-        input.sendKeys(siteInfo.logon);
+        input.sendKeys(logon);
         Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
         input = driver.findElement(By.xpath("//input[@id='passwordInput']"));
-        input.sendKeys(siteInfo.password);
+        input.sendKeys(password);
         Sleeper.sleepBetween(1, 2, TimeUnit.SECONDS);
         
         input = driver.findElement(By.xpath("//input[@id='login' and @value='Login' and @type='submit']"));
