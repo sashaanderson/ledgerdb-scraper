@@ -75,8 +75,6 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         e = e.findElement(By.xpath("./following-sibling::div"));
         logger.debug("Statement closing date: " + e.getText());
         scrapeTransactionTable(accountId);
-        
-        logOut();
     }
     
     @Override
