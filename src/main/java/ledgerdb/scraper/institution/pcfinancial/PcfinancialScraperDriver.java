@@ -113,13 +113,14 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             // Past Transactions
             e1 = driver.findElement(By.xpath("//section[contains(@class,'transaction-list')]//table"));
             List<WebElement> trList = e1.findElements(By.xpath(".//tr"));
-            checkState(trList.size() > 0);
-            checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(0).getText()));
-            logger.debug("Got " + (trList.size() - 1) + " transactions");
+            checkState(trList.size() >= 2);
+            checkState("Transaction List".equals(trList.get(0).getText()));
+            checkState("Date Transactions Funds out Funds in Running Balance".equals(trList.get(1).getText()));
+            logger.debug("Got " + (trList.size() - 2) + " transactions");
 
-            for (int j = 1; j < trList.size(); j++) {
+            for (int j = 2; j < trList.size(); j++) {
                 WebElement tr = trList.get(j);
-                logger.debug("Parsing transaction " + j + " out of " + (trList.size() - 1));
+                logger.debug("Parsing transaction " + (j - 1) + " out of " + (trList.size() - 2));
                 
                 List<WebElement> tdList = tr.findElements(By.xpath("./td"));
                 checkState(tdList.size() == 5);
