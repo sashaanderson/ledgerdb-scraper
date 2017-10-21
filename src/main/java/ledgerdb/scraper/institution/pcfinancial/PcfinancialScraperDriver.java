@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.Select;
 
@@ -47,7 +48,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
         WebElement e1, e2;
         
         e1 = driver.findElement(By.xpath("//a[text()='Account Summary']"));
-        e1.click();
+        click(e1);
         
         logger.debug("Scraping table " + className);
         e1 = driver.findElement(By.xpath("//table[@class='" + className + "']"));
@@ -67,8 +68,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             
             if (i > 0) {
                 e1 = driver.findElement(By.xpath("//a[text()='Account Summary']"));
-                //Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS); //XXX
-                e1.click();
+                click(e1);
 
                 e1 = driver.findElement(By.xpath("//table[@class='" + className + "']"));
                 accountList = e1.findElements(By.xpath("tbody/tr"));
@@ -76,8 +76,7 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
             if (i >= accountList.size()) break;
         
             e2 = accountList.get(i).findElement(By.xpath(".//a"));
-            Sleeper.sleepBetween(2, 5, TimeUnit.SECONDS);
-            e2.click();
+            click(e2);
             // LOADING
 
             // Account Details
@@ -205,9 +204,18 @@ public class PcfinancialScraperDriver extends ScraperDriverBase {
     protected void logOut() {
         logger.debug("Logging out...");
         WebElement e1 = driver.findElement(By.xpath("//button[text()='sign out']/.."));
-        e1.click();
+        click(e1);
 
         driver.findElement(By.xpath("//h1[text()='You have signed off']"));
         this.loggedIn = false;
+    }
+    
+    private void click(WebElement e) {
+        Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS);
+        
+        driver.executeScript("arguments[0].scrollIntoView()", e);
+        
+        Actions actions = new Actions(driver);
+        actions.moveToElement(e).click().build().perform();
     }
 }
