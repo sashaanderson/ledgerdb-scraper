@@ -3,12 +3,14 @@ package ledgerdb.scraper.institution.capitalone;
 import static com.google.common.base.Preconditions.checkState;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import ledgerdb.scraper.ScraperDriverBase;
 import ledgerdb.scraper.ServerSession;
 import ledgerdb.scraper.dto.StatementDTO;
+import ledgerdb.scraper.util.Sleeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -35,104 +37,78 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
     
     @Override
     public void scrape() {
-        WebElement e = driver.findElement(By.xpath("//div[@id='user_info']"));
+        Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS);
+        
+        WebElement e = driver.findElement(By.xpath("//span[@id='acct0_number']"));
         String ref = e.getText();
-        Pattern pattern = Pattern.compile("Account Ending In: (\\d+)");
-        Matcher matcher = pattern.matcher(ref);
-        checkState(matcher.find());
-        ref = matcher.group(1);
+        checkState(ref.startsWith("..."));
+        ref = ref.substring(3);
         checkState(ref.matches("^[0-9]+$"));
-
+        
         int accountId = serverSession.getAccountId(INSTITUTION, ref);
         
-        // Recent Transactions
+        // Transactions & Details
         
-        e = driver.findElement(By.xpath("//a[normalize-space(.)='View Recent Transactions']"));
+        e = driver.findElement(By.xpath("//a[@id='transactions_link']"));
         e.click();
-        driver.findElement(By.xpath("//h1[.='Recent Transactions']"));
-        logger.debug("Recent Transactions");
+        Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS);
+        driver.findElement(By.xpath("//h1[.='Transactions & Details']"));
+        logger.debug("Transactions & Details");
         
-        WebElement table = driver.findElement(By.xpath("//table[caption='ACTIVITY SINCE LAST STATEMENT']"));
-        processTable(table, accountId);
-        
-        // Last Statement Summary
-
-        WebElement label = driver.findElement(By.xpath("//label[.='View Activity:']"));
-        String id = label.getAttribute("for"); // View
-        checkState(id.matches("^\\w+$"));
-        e = driver.findElement(By.id(id));
-        Select select = new Select(e);
-        select.selectByVisibleText("Last Statement Summary");
-        WebElement input = e.findElement(By.xpath("./parent::td/parent::tr//input[@type='button' and @value='Go']"));
-        input.click();
-        
-        table = driver.findElement(By.xpath("//table[caption='STATEMENT SUMMARY']"));
-        table = driver.findElement(By.xpath("//table[caption='TRANSACTION SUMMARY']"));
+        WebElement table = driver.findElement(By.xpath("//div[@id='postedTransactionTable']"));
         processTable(table, accountId);
     }
     
     private void processTable(WebElement table, int accountId) {
-        List<WebElement> rows = table.findElements(By.xpath(".//tr"));
-        checkState(rows.size() >= 1);
+        List<WebElement> rows = table.findElements(By.xpath("./div[@role='row']"));
+        logger.debug("Found " + rows.size() + " rows in Posted Transactions Table.");
         
-        WebElement row = rows.get(0);
-        List<WebElement> cells = row.findElements(By.xpath("./child::th"));
-        checkState(cells.size() == 4);
-        checkState(cells.get(0).getText().trim().equals("TRANS DATE"));
-        checkState(cells.get(1).getText().trim().equals("Post Date"));
-        checkState(cells.get(2).getText().trim().equals("TRANSACTION DESCRIPTION"));
-        checkState(cells.get(3).getText().trim().equals("AMOUNT"));
-        
-        for (int i = 1; i < rows.size(); i++) {
-            row = rows.get(i);
-            if (rows.size() == 2 &&
-                    row.getText().startsWith("No transactions available")) {
-                logger.debug(row.getText());
-                break;
-            }
-            
-            cells = row.findElements(By.xpath("./child::td"));
-            checkState(cells.size() == 4);
+        for (int i = 0; i < rows.size(); i++) {
+            WebElement row = rows.get(i);
+            List<WebElement> cells = row.findElements(By.xpath("./div[@role='gridcell']"));
+            checkState(cells.size() == 5);
             
             StatementDTO s = new StatementDTO();
             s.setAccountId(accountId);
-            s.setDate(cells.get(0).getText(), "dd/MM/yyyy");
+            
+            String date = cells.get(0).getText();
+            date = date.replace("Open Drawer", "");
+            date = date.replaceAll("\\s", "");
+            s.setDate(date, "MM/dd/yy");
+            
             s.setDescription(cells.get(2).getText());
             
-            String amount = cells.get(3).getText();
+            //TODO - set "accountable" user id -> cells.get(3).getText()
+            
+            String amount = cells.get(4).getText();
             checkState(amount.matches("^-?\\$[\\d,]+\\.\\d\\d$"));
             amount = amount.replaceAll("[^-\\d.]", "");
             s.setAmount(new BigDecimal(amount).negate());
 
             serverSession.merge(s);
-            logger.debug("Done merged transaction " + i + " out of " + (rows.size() - 1));
+            logger.debug("Done merged transaction " + (i + 1) + " out of " + rows.size());
         }
     }
     
     @Override
     protected void logIn(String logon, String password) {
-        driver.findElement(By.xpath("//h1[.='Please Login']"));
-        logger.debug("Please Login");
+        Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS);
+        driver.findElement(By.xpath("//label[.='Sign In']"));
+        logger.debug("Sign In");
         
         WebElement input;
-        String id;
         
-        input = driver.findElement(By.xpath("//label[.='Login ID']"));
-        id = input.getAttribute("for");
-        input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
+        input = driver.findElement(By.xpath("//input[@id='username']"));
         input.sendKeys(logon);
-        
-        input = driver.findElement(By.xpath("//label[.='Password']"));
-        id = input.getAttribute("for");
-        input = driver.findElement(By.xpath("//input[@id='" + id + "']"));
+        input = driver.findElement(By.xpath("//input[@id='password']"));
         input.sendKeys(password);
         
-        input = driver.findElement(By.xpath("//input[@type='button' and @value='Login']"));
+        input = driver.findElement(By.xpath("//button[.='Sign In']"));
         input.click();
         logger.debug("Logging in...");
         
-        driver.findElement(By.xpath("//h1[.='Current Account Status']"));
         //TODO: check error message, if login failed
+        driver.findElement(By.xpath("//h1/span[starts-with(text(),'Welcome')]"));
         
         logger.debug("Logged in");
         super.logIn();
@@ -142,9 +118,9 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
     protected void logOut() {
         logger.debug("Logging out...");
         
-        WebElement link = driver.findElement(By.xpath("//img[@alt='logoff']/parent::a"));
+        WebElement link = driver.findElement(By.xpath("//a[.='Sign Out']"));
         link.click();
-        driver.findElement(By.xpath("//h1[.=\"You're logged out\"]"));
+        driver.findElement(By.xpath("//h1[.=\"You've logged out of online banking.\"]"));
         
         logger.debug("Logged out");
         super.logOut();
