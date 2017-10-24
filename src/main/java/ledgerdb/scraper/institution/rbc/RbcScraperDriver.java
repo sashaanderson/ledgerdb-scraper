@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 public class RbcScraperDriver extends ScraperDriverBase {
@@ -63,11 +64,11 @@ public class RbcScraperDriver extends ScraperDriverBase {
             
             int accountId = serverSession.getAccountId(INSTITUTION, ref);
             
-            link.click();
+            click(link);
             
             //XXX
-            //link = driver.findElement(By.xpath("//a[@title='Display last 30 days']"));
-            //link.click();
+            link = driver.findElement(By.xpath("//a[@title='Display last 30 days']"));
+            click(link);
 
             Sleeper.sleepBetween(5, 10, TimeUnit.SECONDS); // wait for page to load
             e = driver.findElement(By.xpath("//section[@id='pdaTransactionsTable']"));
@@ -105,7 +106,7 @@ public class RbcScraperDriver extends ScraperDriverBase {
             }
             
             link = driver.findElement(By.xpath("//a[normalize-space(text())='Accounts Summary']"));
-            link.click();
+            click(link);
             checkStateAccountSummary();
         }
     }
@@ -153,12 +154,21 @@ public class RbcScraperDriver extends ScraperDriverBase {
         logger.debug("Logging out...");
         
         WebElement button = driver.findElement(By.xpath("//button/span[.='Sign Out']/.."));
-        button.click();
+        click(button);
         
         // You've Successfully Signed Out of Online Banking
         driver.findElement(By.xpath("//h1[contains(., 'Signed Out')]"));
         
         logger.debug("Logged out");
         this.loggedIn = false;
+    }
+    
+    private void click(WebElement e) {
+        Sleeper.sleepBetween(10, 20, TimeUnit.SECONDS);
+        
+        driver.executeScript("arguments[0].scrollIntoView()", e);
+        
+        Actions actions = new Actions(driver);
+        actions.moveToElement(e).click().build().perform();
     }
 }
