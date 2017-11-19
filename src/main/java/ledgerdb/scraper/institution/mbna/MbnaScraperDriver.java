@@ -104,15 +104,31 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         // What is your favourite bakery?</label>
         // <input id="MFAChallengeForm:answer" type="password" ...
         String marker = "//h1[normalize-space(.)='My Accounts']";
-        driver.findElements(By.xpath(marker));
-        
-        List<WebElement> a = driver.findElements(By.xpath("//div[@id='errorMessage']"));
-        if (a.size() > 0) {
-            logger.error("Login failed: " + a.get(0).getText());
-            throw new IllegalStateException("Login failed");
+        for (int retry = 0;; retry++) {
+            driver.findElements(By.xpath(marker));
+
+            List<WebElement> a;
+            a = driver.findElements(By.xpath("//h1[normalize-space(.)='Identity not recognized']"));
+            if (a.size() > 0) {
+                if (retry >= 10) {
+                    throw new IllegalStateException("Identity not recognized");
+                }
+                logger.info("Identity not recognized" + (retry == 0 ? "" : ", retry # " + retry));
+                logger.info("Please enter the answer to your challenge question and click Continue...");
+                Sleeper.sleepBetween(10, 15, TimeUnit.SECONDS);
+                continue;
+            }
+            
+            a = driver.findElements(By.xpath("//div[@id='errorMessage']"));
+            if (a.size() > 0) {
+                logger.error("Login failed: " + a.get(0).getText());
+                throw new IllegalStateException("Login failed");
+            }
+            
+
+            driver.findElement(By.xpath(marker));
+            break;
         }
-        
-        driver.findElement(By.xpath(marker));
         
         logger.debug("Logged in successfully");
         super.logIn();
