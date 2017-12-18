@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.Select;
 
@@ -68,15 +69,20 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
             List<WebElement> cells = row.findElements(By.xpath("./div[@role='gridcell']"));
             checkState(cells.size() == 5);
             
+            WebElement e = cells.get(0).findElement(By.xpath("./a[.='Open Drawer']"));
+            click(e);
+            e = findElement(row, "./following-sibling::div//div[@class='info']//span[@class='appears_as']");
+            
             StatementDTO s = new StatementDTO();
             s.setAccountId(accountId);
             
             String date = cells.get(0).getText();
-            date = date.replace("Open Drawer", "");
             date = date.replaceAll("\\s", "");
+            date = date.replaceFirst("^[A-Za-z]+", ""); // Open Drawer, Close Drawer
             s.setDate(date, "MM/dd/yy");
             
-            s.setDescription(cells.get(2).getText());
+            //s.setDescription(cells.get(2).getText());
+            s.setDescription(e.getText());
             
             //TODO - set "accountable" user id -> cells.get(3).getText()
             
@@ -124,5 +130,19 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
         
         logger.debug("Logged out");
         super.logOut();
+    }
+    
+    private void click(WebElement e) {
+        driver.executeScript("window.scrollTo(0, arguments[0].getBoundingClientRect().top + window.pageYOffset - (window.innerHeight / 2))", e);
+        e.click();
+    }
+    
+    private WebElement findElement(WebElement parent, String xpath) {
+        for (int i = 0; i < 10; i++) {
+            List<WebElement> a = parent.findElements(By.xpath(xpath));
+            if (!a.isEmpty()) break;
+            Sleeper.sleepBetween(1, 1, TimeUnit.SECONDS);
+        }
+        return parent.findElement(By.xpath(xpath));
     }
 }
