@@ -71,7 +71,7 @@ public class MbnaScraperDriver extends ScraperDriverBase {
         e.click();
         driver.findElement(By.xpath("//h1[normalize-space(.)='Statements']"));
         driver.findElement(By.xpath("//h3[normalize-space(.)='Statement activity']"));
-        e = driver.findElement(By.xpath("//div[normalize-space(./strong)='Statement closing date:']"));
+        e = driver.findElement(By.xpath("//div[normalize-space(.)='Statement closing date:']"));
         e = e.findElement(By.xpath("./following-sibling::div"));
         logger.debug("Statement closing date: " + e.getText());
         scrapeTransactionTable(accountId);
