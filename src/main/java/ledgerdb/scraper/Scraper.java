@@ -196,6 +196,9 @@ public class Scraper {
             
             scraperDriver.logIn(siteInfo.logon, siteInfo.password);
             scraperDriver.scrape();
+        } catch (Exception e) {
+            logger.error("Exception occurred: " + e.getMessage(), e);
+            throw e;
         } finally {
             serverSession.close();
             if (!commandLine.hasOption(OPTION_KEEP)) {
