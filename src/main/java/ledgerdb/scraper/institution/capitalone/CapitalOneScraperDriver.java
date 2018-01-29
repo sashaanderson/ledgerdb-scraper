@@ -71,7 +71,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
             
             WebElement e = cells.get(0).findElement(By.xpath("./a[.='Open Drawer']"));
             click(e);
-            e = findElement(row, "./following-sibling::div//div[@class='info']//span[@class='appears_as']");
+            e = findElement(row, "./following-sibling::div//div[starts-with(@class,'info')]//span[@class='appears_as']");
             
             StatementDTO s = new StatementDTO();
             s.setAccountId(accountId);
@@ -79,7 +79,7 @@ public class CapitalOneScraperDriver extends ScraperDriverBase {
             String date = cells.get(0).getText();
             date = date.replaceAll("\\s", "");
             date = date.replaceFirst("^[A-Za-z]+", ""); // Open Drawer, Close Drawer
-            s.setDate(date, "MM/dd/yy");
+            s.setDate(date, "M/dd/yy");
             
             //s.setDescription(cells.get(2).getText());
             s.setDescription(e.getText());
